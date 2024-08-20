@@ -1,3 +1,8 @@
+// define variaveis globais
+char input_buffer[20];
+char output_buffer[35];
+int valor[32];
+
 int read(int __fd, const void *__buf, int __n){
     int ret_val;
   __asm__ __volatile__(
@@ -50,21 +55,36 @@ void _start()
 #define STDOUT_FD 1
 
 /* FUNCOES */
-int eh_hexadecimal();
-int eh_decimal();
-void converte_string_int();
-void converte_int_string();
-int hexa_negativo();
-int complemento_binario();
-int complemento_hexa();
-int extende_32bits();
-int decimal_binario();
-int hexa_binario();
+
+void zeraOutput() {
+    for(int i=0;i<35;i++) {
+        output_buffer[i] = 0;
+    }
+}
 
 
+int *converteCharParaInt(char input_buffer[20]) {
+    int input[20];
+    for(int i=0; input_buffer[i] != '\n'; i++) {
+        input[i] = input_buffer[i] - '0';
+    }
+    return input;
+}
 
-void converte_string_int() {
-    return;
+int *inverteVetor(int vetor[32], int posicao) {
+    int temp[32];
+    for (int i=0; i<posicao; i++) {
+        temp[i] = vetor[posicao - i];
+    }
+    return temp;
+}
+
+int *copiaVetor(int vetor[32]) {
+    int v2[32];
+    for(int i=0; i<32; i++) {
+        v2[i] = vetor[i];
+    }
+    return v2;
 }
 
 
@@ -73,23 +93,33 @@ void converte_int_string() {
 }
 
 /* Verifica se a base eh hexadecimal*/
-int eh_hexadecimal() {
-    if(input_buffer[1] == "x") {
+int isHexadecimal() {
+    if(input_buffer[1] == 'x') {
         return 1;
     }
     return 0;
 }
 
 /* Verifica se a base eh decimal*/
-int eh_decimal() {
+int isDecimal() {
     return 0;
 }
 
-int decimal_binario() {
-    return 0;
+int decimalParaBinario(int decimal) {
+    int binarioInvertido[32];
+    int k=-1;
+    while(decimal != 0) {
+        k++;
+        binarioInvertido[k] = (decimal % 2);
+        decimal /= 2;
+    }
+    int binario[32] = inverteVetor(binarioInvertido, k);
+    return binario;
 }
 
-int hexa_binario() {
+/* LIDANDO COM HEXADECIMAL */
+
+int hexaParaBinario() {
     // Percorre o buffer, baseado na tabela ascii
     int j=0;
     // converte todos os caracteres para inteiro
@@ -102,49 +132,46 @@ int hexa_binario() {
             // eh um valor entre A e F
             switch(input_buffer[i]) {
                 case 'A':
-                    valor[j] = 1;
-                    valor[j+1] = 0;
-                    j++;
+                    valor[j] = 10;
                     break;
                 case 'B':
-                    valor[j] = 1;
-                    valor[j+1] = 1;
-                    j++;
+                    valor[j] = 11;
                     break;
                 case 'C':
-                    valor[j] = 1;
-                    valor[j+1] = 2;
-                    j++;
+                    valor[j] = 12;
                     break;
                 case 'D':
-                    valor[j] = 1;
-                    valor[j+1] = 3;
-                    j++;
+                    valor[j] = 13;
                     break;
                 case 'E':
-                    valor[j] = 1;
-                    valor[j+1] = 4;
-                    j++;
+                    valor[j] = 14;
                     break;
                 case 'F':
-                    valor[j] = 1;
-                    valor[j+1] = 5;
-                    j++;
+                    valor[j] = 15;
                     break;
             }
         }
     }
 
     // Converte hexadecimal para decimal
-    int decimal = hexa_decimal()
+    int decimal = hexa_decimal(valor, j);
+
+    // Converte decimal para binário
+    int binario[32] = decimalParaBinario(decimal);
 }
 
-int hexa_decimal(int hexa[32], int j) {
-    int decimal;
-    for(int i=j; i==0; i--) {
+int hexaParaDecimal(int hexa[32], int j) {
+    int decimal = 0;
+    for(int i=0; i<j; i++) {
         decimal += hexa[i] * elevado(16, i);
     }
+
+    // TODO: inverter vetor
     return decimal;
+}
+
+int inverteEndian() {
+    
 }
 
 int elevado(int base, int expoente) {
@@ -155,48 +182,42 @@ int elevado(int base, int expoente) {
     return resultado;
 }
 
+
+
+
 /* Verifica se o numero de entrada eh negativo
 digito mais significativo = 1: negativo
 digito mais significativo = 0: positivo*/
 int decimal_negativo() {
     // olha se tem -
+    if(input_buffer[0] == '-') {
+        return 1;
+    }
     return 0;
 }
 
-int hexa_negativo() {
-    // converte para binario para verificar o sinal
+/* Digito mais significativo a partir de 8: negativo
+Retorna 1 se negativo e 0 se positivo */
+int hexaNegativo(char hexa[35]) {
+    // posicao 2 (depois do x): digito mais significativo
+    if(hexa[2] > '7') {
+        return 1;
+    }
     return 0;
-}
-
-int complemento_binario() {
-    return 0;
-}
-
-int complemento_hexa() {
-
-}
-
-int extende_32bits() {
-
 }
 
 
 
 /* MAIN */
 
-// define variaveis globais
-char input_buffer[20];
-char output_buffer[35];
-int valor[32];
+
 int main() {
     int n = read(STDIN_FD, input_buffer, 20);
-    if (eh_hexadecimal()) {
+    if (isHexadecimal()) {
         // todo: implementar
+        if(hexaNegativo(output_buffer))
 
-        // verifica se eh negativo
-        if(hexa_negativo()) {
-
-        }
+        
     } else {
         // eh decimal
     }
