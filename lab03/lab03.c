@@ -100,11 +100,6 @@ int isHexadecimal() {
     return 0;
 }
 
-/* Verifica se a base eh decimal*/
-int isDecimal() {
-    return 0;
-}
-
 int decimalParaBinario(int decimal) {
     int binarioInvertido[32];
     int k=-1;
@@ -121,40 +116,22 @@ int decimalParaBinario(int decimal) {
 
 int hexaParaBinario() {
     // Percorre o buffer, baseado na tabela ascii
-    int j=0;
-    // converte todos os caracteres para inteiro
-    for (int i=2; input_buffer[i] != '\n'; i++) {
-        j++;
-        if(input_buffer[i] - '0' < 58 && input_buffer[i] > 47) {
-        // eh um valor entre 0 e 9
-        valor[j] = input_buffer[i] - 48;
-        } else {
-            // eh um valor entre A e F
-            switch(input_buffer[i]) {
-                case 'A':
-                    valor[j] = 10;
-                    break;
-                case 'B':
-                    valor[j] = 11;
-                    break;
-                case 'C':
-                    valor[j] = 12;
-                    break;
-                case 'D':
-                    valor[j] = 13;
-                    break;
-                case 'E':
-                    valor[j] = 14;
-                    break;
-                case 'F':
-                    valor[j] = 15;
-                    break;
+    int posicao=0;
+    const char baseHexa[16] = {"0", "1", "2", "3", "4", "5", "6", "7", 
+                                "8", "9", "A", "B", "C", "D", "E", "F"};
+
+    // valor eh igual ao indice
+    for(int i=0; i<32; i++) {
+        for(int j=0; j<16; j++) {
+            if(input_buffer[i] == baseHexa[j]) {
+                valor[i] = j;
+                posicao++;
             }
         }
     }
 
     // Converte hexadecimal para decimal
-    int decimal = hexa_decimal(valor, j);
+    int decimal = hexaParaDecimal(valor, posicao);
 
     // Converte decimal para binário
     int binario[32] = decimalParaBinario(decimal);
