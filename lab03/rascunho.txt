@@ -5,10 +5,10 @@
             1. passa para binario no complemento de 2
             2. passa para decimal do complemento de 2
             3. escreve em hexadecimal
-            4. escreve na base decimal  
+            4. escreve na base decimal sem sinal
                 a. desconsidera o sinal
                 b. troca o endianess
                     i. obtem os 8 bits mais à direita do número com 0x000000FF
                     ii. shifta eles 24 bits para a esquerda
                     iii. repete o mesmo procedimento para os demais
-                c. 
+                c. converte para decimal
