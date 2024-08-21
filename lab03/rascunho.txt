@@ -1,0 +1,8 @@
+1. Verifica o tipo da entrada
+2. Se for hexadecimal:
+    a. Verifica o sinal (se o MSB é maior que 7)
+        i. Se for negativo:
+            1. passa para binario no complemento de 2
+            2. passa para decimal do complemento de 2
+            3. escreve em hexadecimal
+            4. 
