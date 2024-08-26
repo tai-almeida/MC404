@@ -63,6 +63,6 @@ int main() {
     int valor_numerico = 0;
     valor_numerico = valor_decimal(input, 0);
     printf("valor decimal: %d\n", valor_numerico);
-    para_binario(valor_numerico);
+    para_binario(-1);
     return 0;
 }

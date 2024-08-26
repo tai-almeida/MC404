@@ -79,10 +79,10 @@ int valor_decimal(const char *input, int base) {
         const char base_hexa[16] = {'0', '1', '2', '3', '4', '5', '6', '7', 
                         '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-        if(input[2] > '7' && input[2] <= 'f') {
-            sinal = -1;
-            i++;
-        }
+        // if(input[2] > '7' && input[2] <= 'f') {
+        //     sinal = -1;
+        //     i++;
+        // }
         for(int j=tam-1; j>=2; j--) {
             for(int k=0; k<16; k++) {
                 if(input[j] == base_hexa[k]) {

@@ -54,46 +54,12 @@ int get_tipo(char *input) {
     return 0;
 }
 
-void print_str(int valor) {
-    int aux=0;
-    char str[35];
-
-    if (valor == -2147483648) { 
-        write(STDOUT_FD, "-2147483648\n", 12);
-        // estoura o limite possivel
-    } else {
-        if(valor < 0) {
-            // para valores negativos
-            write(STDOUT_FD, '-', 1);
-            aux = -valor;
-        } else {
-            aux = valor;
-        }
+int elevado(int base, int expoente) {
+    int resultado=1;
+    for(int i=0; i<expoente; i++) {
+        resultado *= base;
     }
-
-    int n=0, temp = aux;
-    while (aux != 0) {
-        // conta o numero de digitos presentes
-        n++;
-        aux /= 10;
-    }
-
-    if(n == 0 ) {
-        str[n] = '0';
-        n++;
-    }
-
-    aux = temp;
-    for(int i=n-1; i>=0; i++) {
-        // converte cada digito para char
-        int resto = aux%10;
-        str[i] = resto + '0';
-        aux /= 10;
-    }
-
-    str[n] = '\n';
-    str[n+1] = '\0';
-    write(STDOUT_FD, str, n+2);
+    return resultado;
 }
 
 void inverte_str(char *aux, char *destino, int tam) {
@@ -113,7 +79,8 @@ int para_char(int valor, char *output) {
     if(valor == -2147483648) {
         write(STDOUT_FD, "-2147483648\n", 12);
         return 11;
-    } else if(valor < 0) {
+    } 
+    if(valor < 0) {
         negativo = 1;
         valor *= -1;
     }
@@ -130,15 +97,13 @@ int para_char(int valor, char *output) {
     } 
     
     inverte_str(aux, output, i);
-    //output[i] = '\n';
-
     return i;
 }
 
 /*Converte para string para um valor numerico
 Padrão do c: ja em complemento de 2*/
 int valor_decimal(const char *input, int base, int n_bytes) {
-    int resultado=0, sinal=1, i=0, potencia=1;
+    int resultado=0, sinal=1, i=0, exp=0;
     int digito=0;
     if(base == 0) {
         // eh decimal
@@ -149,28 +114,22 @@ int valor_decimal(const char *input, int base, int n_bytes) {
         } 
         for(int j=n_bytes-2; j>=i; j--) {
             digito = input[j] - '0';
-            // print(digito);
-            // print(potencia);
-            resultado += digito*potencia;
-            potencia *= 10;
+            resultado += digito*elevado(10, exp);
+            exp++;
         }
     } else {
         // eh hexadecimal
         const char base_hexa[16] = {'0', '1', '2', '3', '4', '5', '6', '7', 
                         '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
-        if(input[2] > '7' && input[2] <= 'f') {
-            sinal = -1;
-            i++;
-        }
+        
         for(int j=n_bytes-2; j>=2; j--) {
             for(int k=0; k<16; k++) {
                 if(input[j] == base_hexa[k]) {
                     digito = k;
                 }
             }
-            resultado += digito*potencia;
-            potencia *= 16;
+            resultado += digito*elevado(16, exp);
+            exp++;
         }
     }
     return resultado*sinal;
@@ -181,31 +140,23 @@ caso seja um valor negativo, usa-se complemento de 2
 So comeca a imprimir a partir do primeiro 1 (descarta os zeros a esquerda)*/
 void para_binario(int valor) {
     int achou=0;
-    //printf("0b");
     write(STDOUT_FD, "0b", 2);
 
     // percorre o valor do digito menos significativo para o mais
     for(int i=31; i>=0; i--) {
-        // compara o valor com o bit na posicao i
-        if(!(valor & (1<<i))) {
-            // caso de zero, o digito binario eh zero
-            if(achou == 0) {
-                continue;
-            } else {
-                //printf("0");
-                write(STDOUT_FD, "0", 1);
-            }
-        } else {
-            // caso de um, o digito binario eh um
+        if(valor & (1<<i)) {
             achou=1;
-            //printf("1");
             write(STDOUT_FD, "1", 1);
+        } else {
+            if(!achou) {
+                continue;
+            } else write(STDOUT_FD, "0", 1);
         }
     }
-    //printf("\n");
     write(STDOUT_FD, "\n", 1);
 }
 
+/* Processa cada 4 bits e salva sua conversao em uma string */
 void para_hexa(int valor) {
     int achou=0, resultado=0;
     char digito;
@@ -213,9 +164,6 @@ void para_hexa(int valor) {
     const char base_hexa[16] = {'0', '1', '2', '3', '4', '5', '6', '7', 
                         '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
     
-    // if(valor < 0) {
-    //     valor = ~(valor) + 1;
-    // }
     // processa cada 4 bits (exapansao do binario)
     int quatro_bits=0, j=0, i;
     for(i=7; i>=0; i--) {
@@ -225,7 +173,6 @@ void para_hexa(int valor) {
         aux[j] = digito;
         j++;
     }
-    //aux[j] = '\n';
 
     int ini = 0;
     while(aux[ini] == '0' && ini < j-1) {
@@ -236,7 +183,6 @@ void para_hexa(int valor) {
     }
     hexa[i-ini+2] = '\n';
     hexa[i-ini+3] = '\0';
-    //printf("0x%s\n", hexa);
     hexa[0] = '0';
     hexa[1] = 'x';
     write(STDOUT_FD, hexa, i-ini+3);
@@ -261,11 +207,10 @@ int swap_endianness(int valor) {
 
     // concatena os resultados usando OR
     resultado = byte0 | byte1 | byte2 | byte3;
-    //printf("%d", resultado);
     return resultado;
 }
 
-void print_uint(int valor) {
+void print_swapped(int valor) {
     char str[35];
     unsigned int resultado=0, n=0;
 
@@ -282,15 +227,14 @@ void print_uint(int valor) {
     aux=temp;
     for(int i=n-1; i>=0; i--) {
         int resto = aux%10;
-        str[i] = resto + '0';
         aux /= 10;
+        str[i] = resto + '0';
     }
     str[n] = '\n';
     write(STDOUT_FD, str, n+1);
 }
 
-int main()
-{
+int main() {
   char str[20];
   /* Read up to 20 bytes from the standard input into the str buffer */
   int n = read(STDIN_FD, input, 20);
@@ -300,22 +244,18 @@ int main()
         valor_numerico = valor_decimal(input, 1, n);
         para_binario(valor_numerico);
         para_char(valor_numerico, output);
-        //print_str(valor_numerico);
         write(STDOUT_FD, output, 35);
         write(STDOUT_FD, input, 11);
         int trocado = swap_endianness(valor_numerico);
-        print_uint(trocado);
+        print_swapped(trocado);
     } else {
         valor_numerico = valor_decimal(input, 0, n);
         para_binario(valor_numerico);
         write(STDOUT_FD, input, 11);
         para_hexa(valor_numerico);
         int trocado = swap_endianness(valor_numerico);
-        print_uint(trocado);
+        print_swapped(trocado);
     }
-
-  /* Write n bytes from the str buffer to the standard output */
-  write(STDOUT_FD, str, n);
   return 0;
 }
 
