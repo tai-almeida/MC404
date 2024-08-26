@@ -1,8 +1,3 @@
-// define variaveis globais
-char input_buffer[20];
-char output_buffer[35];
-int valor[32];
-
 int read(int __fd, const void *__buf, int __n){
     int ret_val;
   __asm__ __volatile__(
@@ -44,341 +39,288 @@ void exit(int code)
     : "a0", "a7"
   );
 }
+#define STDIN_FD  0
+#define STDOUT_FD 1
+char input[20];
+char output[35];
+
+/* Identifica base de entrada
+se 1: hexadecimal
+se 0: decimal */
+int get_tipo(char *input) {
+    if(input[1] == 'x') {
+        return 1;
+    }
+    return 0;
+}
+
+void print_str(int valor) {
+    int aux=0;
+    char str[35];
+
+    if (valor == -2147483648) { 
+        write(STDOUT_FD, "-2147483648\n", 12);
+        // estoura o limite possivel
+    } else {
+        if(valor < 0) {
+            // para valores negativos
+            write(STDOUT_FD, '-', 1);
+            aux = -valor;
+        } else {
+            aux = valor;
+        }
+    }
+
+    int n=0, temp = aux;
+    while (aux != 0) {
+        // conta o numero de digitos presentes
+        n++;
+        aux /= 10;
+    }
+
+    if(n == 0 ) {
+        str[n] = '0';
+        n++;
+    }
+
+    aux = temp;
+    for(int i=n-1; i>=0; i++) {
+        // converte cada digito para char
+        int resto = aux%10;
+        str[i] = resto + '0';
+        aux /= 10;
+    }
+
+    str[n] = '\n';
+    str[n+1] = '\0';
+    write(STDOUT_FD, str, n+2);
+}
+
+void inverte_str(char *aux, char *destino, int tam) {
+    int j=0;
+    for(int i = tam-1; i>=0; i--) {
+        destino[j] = aux[i];
+        j++;
+    }
+    destino[j] = '\n';
+    destino[j+1] = '\0';
+}
+
+int para_char(int valor, char *output) {
+    int i=0, negativo = 0;
+    char aux[35];
+
+    if(valor == -2147483648) {
+        write(STDOUT_FD, "-2147483648\n", 12);
+        return 11;
+    } else if(valor < 0) {
+        negativo = 1;
+        valor *= -1;
+    }
+
+    while(valor != 0) {
+        aux[i] = (valor % 10) + '0';
+        valor /= 10;
+        i++;
+    }
+
+    if(negativo) {
+        aux[i] = '-';
+        i++;
+    } 
+    
+    inverte_str(aux, output, i);
+    //output[i] = '\n';
+
+    return i;
+}
+
+/*Converte para string para um valor numerico
+Padrão do c: ja em complemento de 2*/
+int valor_decimal(const char *input, int base, int n_bytes) {
+    int resultado=0, sinal=1, i=0, potencia=1;
+    int digito=0;
+    if(base == 0) {
+        // eh decimal
+        if(input[0] == '-') {
+            // verifica se eh negativo
+            sinal = -1;
+            i++;
+        } 
+        for(int j=n_bytes-2; j>=i; j--) {
+            digito = input[j] - '0';
+            // print(digito);
+            // print(potencia);
+            resultado += digito*potencia;
+            potencia *= 10;
+        }
+    } else {
+        // eh hexadecimal
+        const char base_hexa[16] = {'0', '1', '2', '3', '4', '5', '6', '7', 
+                        '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+        if(input[2] > '7' && input[2] <= 'f') {
+            sinal = -1;
+            i++;
+        }
+        for(int j=n_bytes-2; j>=2; j--) {
+            for(int k=0; k<16; k++) {
+                if(input[j] == base_hexa[k]) {
+                    digito = k;
+                }
+            }
+            resultado += digito*potencia;
+            potencia *= 16;
+        }
+    }
+    return resultado*sinal;
+}
+
+/* Converte um valor numerico para binarios avaliando bit por bit
+caso seja um valor negativo, usa-se complemento de 2
+So comeca a imprimir a partir do primeiro 1 (descarta os zeros a esquerda)*/
+void para_binario(int valor) {
+    int achou=0;
+    //printf("0b");
+    write(STDOUT_FD, "0b", 2);
+
+    // percorre o valor do digito menos significativo para o mais
+    for(int i=31; i>=0; i--) {
+        // compara o valor com o bit na posicao i
+        if(!(valor & (1<<i))) {
+            // caso de zero, o digito binario eh zero
+            if(achou == 0) {
+                continue;
+            } else {
+                //printf("0");
+                write(STDOUT_FD, "0", 1);
+            }
+        } else {
+            // caso de um, o digito binario eh um
+            achou=1;
+            //printf("1");
+            write(STDOUT_FD, "1", 1);
+        }
+    }
+    //printf("\n");
+    write(STDOUT_FD, "\n", 1);
+}
+
+void para_hexa(int valor) {
+    int achou=0, resultado=0;
+    char digito;
+    char hexa[35], aux[35];
+    const char base_hexa[16] = {'0', '1', '2', '3', '4', '5', '6', '7', 
+                        '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+    
+    // if(valor < 0) {
+    //     valor = ~(valor) + 1;
+    // }
+    // processa cada 4 bits (exapansao do binario)
+    int quatro_bits=0, j=0, i;
+    for(i=7; i>=0; i--) {
+        // desloca valor 4i pra direita e compara com o valor 15 em binario
+        quatro_bits = (valor >> (4*i)) & 15;
+        digito = base_hexa[quatro_bits];
+        aux[j] = digito;
+        j++;
+    }
+    //aux[j] = '\n';
+
+    int ini = 0;
+    while(aux[ini] == '0' && ini < j-1) {
+        ini++;
+    }
+    for(i=ini; i<8; i++) {
+        hexa[i-ini+2] = aux[i];
+    }
+    hexa[i-ini+2] = '\n';
+    hexa[i-ini+3] = '\0';
+    //printf("0x%s\n", hexa);
+    hexa[0] = '0';
+    hexa[1] = 'x';
+    write(STDOUT_FD, hexa, i-ini+3);
+}
+
+int swap_endianness(int valor) {
+    int byte0, byte1, byte2, byte3;
+    int resultado;
+
+    // isola do byte menos ao mais significativo
+    byte0 = (valor & 0X000000FF) >> 0;
+    byte1 = (valor & 0x0000FF00) >> 8;
+    byte2 = (valor & 0x00FF0000) >> 16;
+    byte3 = (valor & 0xFF000000) >> 24;
+
+    // shifta cada byte para ter o menos significativo 
+    // no lugar do mais e vice versa
+    byte0 <<= 24;
+    byte1 <<= 16;
+    byte2 <<= 8;
+    byte3 <<= 0;
+
+    // concatena os resultados usando OR
+    resultado = byte0 | byte1 | byte2 | byte3;
+    //printf("%d", resultado);
+    return resultado;
+}
+
+void print_uint(int valor) {
+    char str[35];
+    unsigned int resultado=0, n=0;
+
+    if(valor == 4294967295) {
+        // explode o limite
+        write(STDOUT_FD, "4294967295\n", 11);
+        return;
+    }
+    unsigned int aux = valor, temp=aux;
+    while(aux != 0) {
+        n++;
+        aux /= 10;
+    }
+    aux=temp;
+    for(int i=n-1; i>=0; i--) {
+        int resto = aux%10;
+        str[i] = resto + '0';
+        aux /= 10;
+    }
+    str[n] = '\n';
+    write(STDOUT_FD, str, n+1);
+}
+
+int main()
+{
+  char str[20];
+  /* Read up to 20 bytes from the standard input into the str buffer */
+  int n = read(STDIN_FD, input, 20);
+  int valor_numerico = 0;
+    if(get_tipo(input)) {
+        // eh hexadecimal
+        valor_numerico = valor_decimal(input, 1, n);
+        para_binario(valor_numerico);
+        para_char(valor_numerico, output);
+        //print_str(valor_numerico);
+        write(STDOUT_FD, output, 35);
+        write(STDOUT_FD, input, 11);
+        int trocado = swap_endianness(valor_numerico);
+        print_uint(trocado);
+    } else {
+        valor_numerico = valor_decimal(input, 0, n);
+        para_binario(valor_numerico);
+        write(STDOUT_FD, input, 11);
+        para_hexa(valor_numerico);
+        int trocado = swap_endianness(valor_numerico);
+        print_uint(trocado);
+    }
+
+  /* Write n bytes from the str buffer to the standard output */
+  write(STDOUT_FD, str, n);
+  return 0;
+}
 
 void _start()
 {
   int ret_code = main();
   exit(ret_code);
-}
-
-#define STDIN_FD  0
-#define STDOUT_FD 1
-
-/* FUNCOES */
-
-void zeraOutput() {
-    for(int i=0;i<35;i++) {
-        output_buffer[i] = 0;
-    }
-}
-
-void zeraVetor(int vetor[32]) {
-    for(int i=0; i<32; i++) {
-        vetor[i] = 0;
-    }
-}
-
-void converteCharParaInt(char input_buffer[20], int output[20]) {
-    for(int i=0; input_buffer[i] != '\n'; i++) {
-        output[i] = input_buffer[i] - '0';
-    }
-}
-
-void converteIntParaChar(unsigned int decimal, char *output) {
-    unsigned int aux = decimal;
-    int i=0;
-
-    while(aux != 0) {
-        output[i] = (aux % 10) + '0';
-        aux /= 10;
-        i++;
-    }
-    inverteVetor(output, i, output_buffer);
-
-}
-
-void inverteVetor(int vetor[32], int posicao, int output[32]) {
-    for (int i=0; i<posicao; i++) {
-        output[i] = vetor[posicao - i - 1];
-    }
-}
-
-void copiaVetor(int *vetor, int *destino) {
-    for(int i=0; vetor[i] != '\0'; i++) {
-        destino[i] = vetor[i];
-    }
-}
-
-int tamString(char output[35]) {
-    int tam=0;
-    while(output[tam] != '\0') {
-        tam++;
-    }
-    return tam;
-}
-
-/* Verifica se a base eh hexadecimal*/
-int isHexadecimal() {
-    if(input_buffer[1] == 'x') {
-        return 1;
-    }
-    return 0;
-}
-
-/* Enquanto a divisao do decimal pela base 2 for diferente de zero, 
-continua-se extraindo o resto das divisoes
-Inverte o vetor, de modo que o MSB eh o valor que foi extraido por ultimo
-*/
-void decimalParaBinario(unsigned int decimal, int output[32]) {
-    for(int i=31; i>= 0; i--) {
-        output[i] = decimal % 2;
-        decimal /= 2;
-    }
-}
-
-int binarioParaDecimal(int binario[32], int posicao) {
-    int decimal = 0;
-    for(int i=0; i<posicao; i++) {
-        decimal += binario[i] * elevado(2, posicao-1-i);
-    }
-    return decimal;
-}
-
-/* Converte hexadecimal para decimal avaliando o polinomio na base 10*/
-unsigned int hexaParaDecimal(char *hexa) {
-    unsigned int decimal = 0;
-    for(int i=0; hexa[i] != '\0'; i++) {
-        decimal += hexa[i] * elevado(16, i);
-    }
-
-    // TODO: inverter vetor
-    return decimal;
-}
-
-void decimalParaHexa(unsigned int decimal, char *output) {
-    // Converte decimal para hexa
-    int i=0;
-    const char baseHexa[16] = {"0", "1", "2", "3", "4", "5", "6", "7", 
-                                "8", "9", "A", "B", "C", "D", "E", "F"};
-
-    while(decimal > 0) {
-        int resto = decimal % 16;
-        // encontra o valor referente a posicao na base 16
-        output[i] = baseHexa[resto];
-        decimal /=16;
-        i++;
-    }
-    inverteVetor(output, i, output_buffer);
-}
-
-/* Transcreve os valores de letra para as suas representacoes posicionais
-Converte de hexadecimal para decimal e de decimal para binario
-Armazena o resultado no vetor valor (global)
-*/
-void hexaParaBinario() {
-    zeraVetor(valor);
-    // Percorre o buffer, baseado na tabela ascii
-    int posicao=0;
-
-    // valor eh igual ao indice
-    for(int i=2; input_buffer[i] != '\0'; i++) {
-        int valorNumerico;
-
-        if(input_buffer[i] >= '0' && input_buffer[i] <= '9') {
-            valorNumerico = input_buffer[i] - '0';
-        } else if(input_buffer[i] >= 'A' && input_buffer <= 'F') {
-            valorNumerico = input_buffer[i] - 'A' + 10;
-        } else {
-            valorNumerico = input_buffer[i] - 'a' + 10;
-        }
-
-        for(int j=3; j>=0; j--) {
-            // desloca o bits de valor numerico para a direita j posicoes,mantendo o menos significativo
-            valor[posicao] = (valorNumerico >> j) & 1;
-            posicao++;
-        }
-    }
-    
-}
-
-/* Transcreve os valores de letra para as suas representacoes posicionais
-Converte de hexadecimal para decimal e de decimal para binario
-Armazena o resultado no vetor valor (global)
-*/
-void binarioParaHexa(int *binario, char *output) {
-    int decimal = binarioParaDecimal(binario, 32);
-    decimalParaHexa(decimal, output_buffer);
-}
-
-void complemento2(int valor[32]) {
-    int resultado[32];
-    // inverte os bits um a um
-    for(int i=0; i<32; i++) {
-        resultado[i] = 1 - valor[i];
-    }
-    
-    // adiciona 1 ao complemento de 1, propagando o carry se ne
-    int soma, carry = 1;
-    for(int i=31; i>=0; i--) {
-        soma = resultado[i] + carry;
-        if(soma == 2) {
-            carry = 1;
-            resultado[i] = 0;
-        } else {
-            carry = 0;
-            resultado[i] = soma;
-        } 
-    }
-    copiaVetor(resultado, valor);
-}
-
-/* Verifica se o valor eh negativo
-se for: shifta os caracteres para a direita e add - no incio
-se nao: apenas faz o calculo da conversao de bases*/
-void comp2ParaDecimal(int *comp2, int posicao) {
-    if(comp2[0] == 1) {
-        // eh negativo - shifta
-        binarioParaDecimal(comp2, posicao);
-        shifta(output_buffer);
-    } else {
-        binarioParaDecimal(comp2, posicao);
-    }
-}
-
-/*Desloca os caracteres para uma posicao a direita
-Inclui o sinal negativo na primeira posicao do vetor*/
-void shifta(char vetor[35]) {
-    int tam;
-    tam = tamString(vetor);
-
-    for(int i = tam; i>=0; i--) {
-        output_buffer[i+1] = output_buffer[i];
-    }
-    output_buffer[0] = '-';
-}
-
-
-
-/* LIDANDO COM HEXADECIMAL */
-
-
-
-
-
-/* Big Endian: armazena o byte mais significativo no menor endereco
-Little Endian: armazena o byte menos significativo no menor endereco */
-int inverteEndianness(unsigned int decimal) {
-    unsigned int resultado = 0;
-
-    // isola o primeiro byte e o desloca para a posicao do quarto byte
-    unsigned int primeiroByte = (decimal & 0x000000FF) >> 0;
-    primeiroByte <<= 24;
-
-    // isola o segundo byte e o desloca para a posicao do terceiro byte
-    unsigned int segundoByte = (decimal & 0x0000FF00) >> 8;
-    segundoByte <<= 16;
-
-    // isola o terceiro byte e o desloca para a posicao do segundo byte
-    unsigned int terceiroByte = (decimal & 0x00FF0000) >> 16;
-    terceiroByte <<= 8;
-
-    // isola o ultimo byte e o desloca para a posicao do segundo byte
-    unsigned int ultimoByte = (decimal & 0xFF000000) >> 24;
-    ultimoByte <<= 0;
-
-    // retorna a concatenacao dos bytes isolados resultando no valor desejado
-    resultado = primeiroByte | segundoByte | terceiroByte | ultimoByte;
-    return resultado;
-}
-
-int elevado(int base, int expoente) {
-    int resultado = 1;
-    for(int i=0; i<expoente; i++) {
-        resultado*=base;
-    }
-    return resultado;
-}
-
-/* Verifica se o numero de entrada eh negativo
-digito mais significativo = 1: negativo
-digito mais significativo = 0: positivo*/
-int decimalNegativo() {
-    // olha se tem -
-    if(input_buffer[0] == '-') {
-        return 1;
-    }
-    return 0;
-}
-
-/* Digito mais significativo a partir de 8 (56): negativo
-Retorna 1 se negativo e 0 se positivo */
-int hexaNegativo() {
-    // posicao 2 (depois do x): digito mais significativo
-    if(input_buffer[2] > 55) {
-        return 1;
-    }
-    return 0;
-}
-
-
-
-/* MAIN */
-
-
-int main() {
-    int n = read(STDIN_FD, input_buffer, 20);
-    zeraVetor(valor);
-    zeraOutput();
-
-    if (isHexadecimal()) {
-        output_buffer[0] = '0';
-        output_buffer[1] = 'b';
-        // todo: implementar
-        if(hexaNegativo()) {
-            // imprime valor binario em complemento de 2
-            hexaParaBinario();
-            complemento2(valor);
-
-            for(int i=0; i<32; i++) {
-                output_buffer[i] = valor[i+2] + '0'; 
-            }
-            output_buffer[35] = '\n';
-            write(STDOUT_FD, output_buffer, tamString(output_buffer));
-        } else {
-            hexaParaBinario();
-            for(int i=0; i<32; i++) {
-                output_buffer[i] = valor[i+2] + '0'; 
-            }
-            output_buffer[35] = '\n';
-            write(STDOUT_FD, output_buffer, tamString(output_buffer));
-        }
-        // imprime valor decimal a partir do complemento de 2
-        zeraOutput();
-        comp2ParaDecimal(valor, 32);
-        output_buffer[32] = '\n'; 
-        write(STDOUT_FD, output_buffer, tamString(output_buffer));
-
-        // imprime valor hexadecimal
-        zeraOutput();
-        copiaVetor(input_buffer, output_buffer);
-        int tam = tamString(output_buffer);
-        output_buffer[tam + 1] = '\n';
-        write(STDOUT_FD, output_buffer, tamString(output_buffer));
-
-        // imprime sem sinal para decimal com swap do endianess
-        zeraOutput();
-        unsigned int inicial = hexaParaDecimal(valor, 32);
-        unsigned int trocado = inverteEndianness(inicial);
-        converteIntParaChar(trocado, output_buffer);
-        write(STDOUT_FD, output_buffer, tamString(output_buffer));
-    } else {
-        // eh decimal
-        zeraOutput();
-        zeraVetor(valor);
-
-        output_buffer[0] = '0';
-        output_buffer[1] = 'b';
-
-        // avalia se eh negativo
-        if(decimalNegativo()) {
-            
-            decimalParaBinario()
-        }
-
-
-        
-    }
-
-    write(STDOUT_FD, output_buffer, 35);
-    return 0;
 }
