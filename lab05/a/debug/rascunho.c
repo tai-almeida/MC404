@@ -1,5 +1,5 @@
 #include <stdio.h>
-int binario[32], aux[32];
+int resultado=0;
 
 int para_decimal(char *input) {
     int n_bytes = 6;
@@ -9,7 +9,7 @@ int para_decimal(char *input) {
     if(input[0] == '-') {
         sinal =-1;
         j++;
-    }
+    } else j++;
 
     // converte para inteiro
     int digito, potencia=1;
@@ -22,27 +22,32 @@ int para_decimal(char *input) {
     return resultado*sinal;
 }
 
-void para_binario(int valor) {
-    int j=31;
-    for(int i=31; i>=0; i--) {
-        // verifica se digito na posicao i eh 0 ou 1
-        if(valor & (1<<i)) {
-            aux[j] = 1;
-            j--;
-        }  else {
-            aux[j] = 0;
-            j--;
-        }
-    }
+
+void para_binario_lsb(int valor, int n, int inicio) {
+    //int posicoes = 32-n;
+    int lsb = valor & n;
+    resultado |= (lsb << inicio);
 }
 
-void lsb(int n, int inicio) {
-    for(int i=inicio; i<=inicio+n; i++) {
-        binario[i] = aux[i];
+void hex_code(int valor){
+    char hex[11];
+    unsigned int uval = (unsigned int) valor, aux;
+
+    hex[0] = '0';
+    hex[1] = 'x';
+    hex[10] = '\n';
+
+    for (int i = 9; i > 1; i--){
+        aux = uval % 16;
+        if (aux >= 10)
+            hex[i] = aux - 10 + 'A';
+        else
+            hex[i] = aux + '0';
+        uval = uval / 16;
     }
+    //write(1, hex, 11);
+    printf("%s\n", hex);
 }
-
-
 
 int main() {
     char input1[7], input2[7], input3[7], input4[7], input5[7];
@@ -55,53 +60,35 @@ int main() {
     
     // primeiro input
     valor_numerico = para_decimal(input1);
-    printf("%d\n", valor_numerico);
-    para_binario(-1);
-    lsb(3, 0);
-    for(int i=31; i>=0; i--) {
-        printf("%d", binario[i]);
-    }
-    printf("\n");
+    
+    para_binario_lsb(valor_numerico, 7, 0);
+    printf("%d\n", resultado);
 
     // segundo input
     valor_numerico = para_decimal(input2);
-    printf("%d\n", valor_numerico);
-    para_binario(valor_numerico);
-    lsb(8, 3);
-    for(int i=31; i>=0; i--) {
-        printf("%d", binario[i]);
-    }
-    printf("\n");
+    para_binario_lsb(valor_numerico, 255, 3);
+    printf("%d\n", resultado);
+    
 
     // terceiro input
     valor_numerico = para_decimal(input3);
-    printf("%d\n", valor_numerico);
-    para_binario(valor_numerico);
-    lsb(5, 11);
-    for(int i=31; i>=0; i--) {
-        printf("%d", binario[i]);
-    }
-    printf("\n");
+    para_binario_lsb(valor_numerico, 31, 11);
+    printf("%d\n", resultado);
+    
 
     // quarto input
     valor_numerico = para_decimal(input4);
-    printf("%d\n", valor_numerico);
-    para_binario(valor_numerico);
-    lsb(5, 16);
-    for(int i=31; i>=0; i--) {
-        printf("%d", binario[i]);
-    }
-    printf("\n");
+    para_binario_lsb(valor_numerico, 31, 16);
+    printf("%d\n", resultado);
+    
 
     // quinto input
     valor_numerico = para_decimal(input5);
-    printf("%d\n", valor_numerico);
-    para_binario(valor_numerico);
-    lsb(11, 21);
-    for(int i=31; i>=0; i--) {
-        printf("%d", binario[i]);
-    }
-    printf("\n");
+    para_binario_lsb(valor_numerico, 2047, 21);
+    printf("%d\n", resultado);
+
+    hex_code(resultado);
+    
 
     return 0;
 }
