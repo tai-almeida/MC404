@@ -444,17 +444,10 @@ void get_inst_data(char inst[], InstData *data){
 #define STDOUT_FD 1
 
 int main() {
-    /*
-        Use the provided functions and the previously implemented pack function to pack the contents
-        of a RISC-V instruction on a single int variable, paying attention to each instruction's
-        particularities and print the final result using the hex_code function.
-    */
     InstData data;
     char input[40];
     int resultado = 0;
     
-    //int n_bytes = read(STDIN_FD, input, 40);
-    //fgets(input, sizeof(input), stdin);
     int n_bytes = read(STDIN_FD, input, 40);
     get_inst_data(input, &data);
     if((data.type) == R) {
@@ -464,7 +457,6 @@ int main() {
                     (data.rs1 & 31) << 15| 
                     (data.rs2 & 31) << 20 | 
                     (data.funct7 & 127) << 25;
-        //printf("%d\n", resultado);
         hex_code(resultado);
     } else if((data.type) == I) {
         resultado = (data.opcode & 127) | 
@@ -472,7 +464,6 @@ int main() {
                     (data.funct3 & 7) << 12 | 
                     (data.rs1 & 31) << 15| 
                     (data.imm & 4095) << 20;
-        //printf("%d\n", resultado);
         hex_code(resultado);
     } else if((data.type) == S) {
         resultado = (data.opcode & 127) | 
@@ -481,7 +472,6 @@ int main() {
                     (data.rs1 & 31) << 15| 
                     (data.rs2 & 31) << 20 | 
                     (data.imm & 0b1111111111100000) << 20;
-        //printf("%d\n", resultado);
         hex_code(resultado);
     } else if((data.type) == B) {
         resultado = (data.opcode & 127) | 
@@ -492,13 +482,11 @@ int main() {
                     (data.rs2 & 31) << 20 | 
                     (data.imm & 0b11111100000) << 20 |
                     (data.imm & (1<<12)) << 19;
-        //printf("%d\n", resultado);
         hex_code(resultado);
     } else if((data.type) == U) {
         resultado = (data.opcode & 127) | 
-                    (data.rd & 31)  << 8 |
-                    (data.imm & 0b11111111111111111111000000000000);
-        //printf("%d\n", resultado);
+                    (data.rd & 31)  << 7 |
+                    (data.imm & 0b11111111111111111111) << 12;
         hex_code(resultado);
     } else {
         resultado = (data.opcode & 127) | 
@@ -507,7 +495,6 @@ int main() {
                     (data.imm & (1<<11)) << 9 |
                     (data.imm & 0b11111111110) << 20 |
                     (data.imm & (1<<20)) << 11;
-        //printf("%d\n", resultado);
         hex_code(resultado);
     }
     return 0;
