@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 // Enum of possible instruction types
 typedef enum InstType { R, I, S, B, U, J} InstType;
 
@@ -13,72 +16,6 @@ typedef struct InstData {
     InstType type;
 } InstData;
 
-
-// read function.
-// Parameters: 
-//    - __fd: file descriptor.
-//    - __buff: destination buffer address.
-//    - __n: number of bytes to read.
-//
-// Returns: number of bytes read 
-int read(int __fd, const void *__buf, int __n){
-  int bytes;
-  __asm__ __volatile__(
-    "mv a0, %1           # file descriptor\n"
-    "mv a1, %2           # buffer \n"
-    "mv a2, %3           # size \n"
-    "li a7, 63           # syscall read (63) \n"
-    "ecall \n"
-    "mv %0, a0"
-    : "=r"(bytes)
-    :"r"(__fd), "r"(__buf), "r"(__n)
-    : "a0", "a1", "a2", "a7"
-  );
-  return bytes;
-}
-
-// write function.
-// Parameters: 
-//    - __fd: file descriptor.
-//    - __buff: source buffer address.
-//    - __n: number of bytes to write.
-//
-// Returns: (nothing)
-void write(int __fd, const void *__buf, int __n){
-  __asm__ __volatile__(
-    "mv a0, %0           # file descriptor\n"
-    "mv a1, %1           # buffer \n"
-    "mv a2, %2           # size \n"
-    "li a7, 64           # syscall write (64) \n"
-    "ecall"
-    :
-    :"r"(__fd), "r"(__buf), "r"(__n)
-    : "a0", "a1", "a2", "a7"
-  );
-}
-
-// exit function.
-// Parameters: 
-//    - code: exit code.
-//
-// Returns: (nothing)
-void exit(int code)
-{
-  __asm__ __volatile__(
-    "mv a0, %0           # return code\n"
-    "li a7, 93           # syscall exit (93) \n"
-    "ecall"
-    :
-    :"r"(code)
-    : "a0", "a7"
-  );
-}
-
-// Receives an int value and then display its hexadecimal representation in STDOUT.
-// Parameters: 
-//    - val: value to convert to hexadecimal representaion and display.
-//
-// Returns: (nothing)
 void hex_code(int val){
     char hex[11];
     unsigned int uval = (unsigned int) val, aux;
@@ -95,7 +32,8 @@ void hex_code(int val){
             hex[i] = aux + '0';
         uval = uval / 16;
     }
-    write(1, hex, 11);
+    //write(1, hex, 11);
+    printf("%s", hex);
 }
 
 // Compares the first n_char characters of two strings.
@@ -440,9 +378,6 @@ void get_inst_data(char inst[], InstData *data){
     return;
 }
 
-#define STDIN_FD 0
-#define STDOUT_FD 1
-
 int main() {
     /*
         Use the provided functions and the previously implemented pack function to pack the contents
@@ -454,8 +389,7 @@ int main() {
     int resultado = 0;
     
     //int n_bytes = read(STDIN_FD, input, 40);
-    //fgets(input, sizeof(input), stdin);
-    int n_bytes = read(STDIN_FD, input, 40);
+    fgets(input, sizeof(input), stdin);
     get_inst_data(input, &data);
     if((data.type) == R) {
         resultado = (data.opcode & 127) | 
@@ -464,7 +398,7 @@ int main() {
                     (data.rs1 & 31) << 15| 
                     (data.rs2 & 31) << 20 | 
                     (data.funct7 & 127) << 25;
-        //printf("%d\n", resultado);
+        printf("%d\n", resultado);
         hex_code(resultado);
     } else if((data.type) == I) {
         resultado = (data.opcode & 127) | 
@@ -472,7 +406,7 @@ int main() {
                     (data.funct3 & 7) << 12 | 
                     (data.rs1 & 31) << 15| 
                     (data.imm & 4095) << 20;
-        //printf("%d\n", resultado);
+        printf("%d\n", resultado);
         hex_code(resultado);
     } else if((data.type) == S) {
         resultado = (data.opcode & 127) | 
@@ -480,40 +414,39 @@ int main() {
                     (data.funct3 & 7) << 12 | 
                     (data.rs1 & 31) << 15| 
                     (data.rs2 & 31) << 20 | 
-                    (data.imm & 0b1111111111100000) << 20;
-        //printf("%d\n", resultado);
+                    (data.imm & 127) << 25;
+        printf("%d\n", resultado);
         hex_code(resultado);
     } else if((data.type) == B) {
         resultado = (data.opcode & 127) | 
-                    (data.imm & (1<<11)) >> 4 | 
-                    (data.imm & 0b11110) << 7 |
+                    (data.imm & 1) << 7 | 
+                    (data.imm & 3) << 8 |
                     (data.funct3 & 7) << 12 | 
                     (data.rs1 & 31) << 15| 
                     (data.rs2 & 31) << 20 | 
-                    (data.imm & 0b11111100000) << 20 |
-                    (data.imm & (1<<12)) << 19;
-        //printf("%d\n", resultado);
+                    (data.imm & 63) << 25 |
+                    (data.imm & 1) << 31;
+        printf("%d\n", resultado);
         hex_code(resultado);
     } else if((data.type) == U) {
         resultado = (data.opcode & 127) | 
                     (data.rd & 31)  << 8 |
-                    (data.imm & 0b11111111111111111111000000000000);
-        //printf("%d\n", resultado);
+                    (data.imm & 1048575) << 12;
+        printf("%d\n", resultado);
         hex_code(resultado);
     } else {
         resultado = (data.opcode & 127) | 
                     (data.rd & 31) << 7 |
-                    (data.imm & 0b1111111111111111111000000000000) |
-                    (data.imm & (1<<11)) << 9 |
-                    (data.imm & 0b11111111110) << 20 |
-                    (data.imm & (1<<20)) << 11;
-        //printf("%d\n", resultado);
+                    (data.imm & 255) << 12 |
+                    (data.imm & 1) << 20 |
+                    (data.imm & 1023) << 21 |
+                    (data.imm & 1) << 31;
+        printf("%d\n", resultado);
         hex_code(resultado);
     }
+    
+    
     return 0;
 }
 
-void _start(){
-    int ret_code = main();
-    exit(ret_code);
-}
+
