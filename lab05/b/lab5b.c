@@ -440,63 +440,66 @@ void get_inst_data(char inst[], InstData *data){
     return;
 }
 
-#define STDIN_FD 0
-#define STDOUT_FD 1
-
-int main() {
-    InstData data;
-    char input[40];
+void mask(InstData data) {
     int resultado = 0;
-    
-    int n_bytes = read(STDIN_FD, input, 40);
-    get_inst_data(input, &data);
     if((data.type) == R) {
-        resultado = (data.opcode & 127) | 
-                    (data.rd & 31) << 7 | 
-                    (data.funct3 & 7) << 12 | 
-                    (data.rs1 & 31) << 15| 
-                    (data.rs2 & 31) << 20 | 
-                    (data.funct7 & 127) << 25;
+        resultado = (data.opcode & 0b1111111) | 
+                    (data.rd & 0b11111) << 7 | 
+                    (data.funct3 & 0b111) << 12 | 
+                    (data.rs1 & 0b11111) << 15| 
+                    (data.rs2 & 0b11111) << 20 | 
+                    (data.funct7 & 0b1111111) << 25;
         hex_code(resultado);
     } else if((data.type) == I) {
-        resultado = (data.opcode & 127) | 
-                    (data.rd & 31) << 7 | 
-                    (data.funct3 & 7) << 12 | 
-                    (data.rs1 & 31) << 15| 
-                    (data.imm & 4095) << 20;
+        resultado = (data.opcode & 0b1111111) | 
+                    (data.rd & 0b11111) << 7 | 
+                    (data.funct3 & 0b111) << 12 | 
+                    (data.rs1 & 0b11111) << 15| 
+                    (data.imm & 0b111111111111) << 20;
         hex_code(resultado);
     } else if((data.type) == S) {
-        resultado = (data.opcode & 127) | 
-                    (data.imm & 31) << 7 | 
-                    (data.funct3 & 7) << 12 | 
-                    (data.rs1 & 31) << 15| 
-                    (data.rs2 & 31) << 20 | 
+        resultado = (data.opcode & 0b1111111) | 
+                    (data.imm & 0b11111) << 7 | 
+                    (data.funct3 & 0b111) << 12 | 
+                    (data.rs1 & 0b11111) << 15| 
+                    (data.rs2 & 0b11111) << 20 | 
                     (data.imm & 0b1111111111100000) << 20;
         hex_code(resultado);
     } else if((data.type) == B) {
-        resultado = (data.opcode & 127) | 
+        resultado = (data.opcode & 0b1111111) | 
                     (data.imm & (1<<11)) >> 4 | 
                     (data.imm & 0b11110) << 7 |
-                    (data.funct3 & 7) << 12 | 
-                    (data.rs1 & 31) << 15| 
-                    (data.rs2 & 31) << 20 | 
+                    (data.funct3 & 0b111) << 12 | 
+                    (data.rs1 & 0b11111) << 15| 
+                    (data.rs2 & 0b11111) << 20 | 
                     (data.imm & 0b11111100000) << 20 |
                     (data.imm & (1<<12)) << 19;
         hex_code(resultado);
     } else if((data.type) == U) {
-        resultado = (data.opcode & 127) | 
-                    (data.rd & 31)  << 7 |
+        resultado = (data.opcode & 0b1111111) | 
+                    (data.rd & 0b11111)  << 7 |
                     (data.imm & 0b11111111111111111111) << 12;
         hex_code(resultado);
     } else {
-        resultado = (data.opcode & 127) | 
-                    (data.rd & 31) << 7 |
+        resultado = (data.opcode & 0b1111111) | 
+                    (data.rd & 0b11111) << 7 |
                     (data.imm & 0b1111111111111111111000000000000) |
                     (data.imm & (1<<11)) << 9 |
                     (data.imm & 0b11111111110) << 20 |
                     (data.imm & (1<<20)) << 11;
         hex_code(resultado);
     }
+}
+
+#define STDIN_FD 0
+#define STDOUT_FD 1
+
+int main() {
+    InstData data;
+    char input[40];
+    int n_bytes = read(STDIN_FD, input, 40);
+    get_inst_data(input, &data);
+    mask(data);
     return 0;
 }
 
