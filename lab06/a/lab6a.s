@@ -2,38 +2,38 @@
 
 _start:
     jal main                  # Salta para o rotulo main
-    li a0, 0
-    li a7, 93
-    ecall
+    
 
 .bss
 raiz: .skip 0x20              
 input_address: .skip 0x20     
 
 .text
-
 main:
     la s0, raiz               # armazena a raiz no registrador s0
     jal read                  # le a entrada
     mv s1, a1
+    la s1, input_address      # armazena o endereço do buffer de input 
     li s5, 0                  # i = 0
     li s6, 20                 # limite do for i = 4
     
-    loop:                         # loop para cada 4 digitos da entrada
-        bge s5, s6, end           # if i >= 4, end
-        jal para_decimal          # passa 4 digitos para decimal
-        jal calcula_raiz          # calcula o valor da raiz
-        jal to_string             # armazena o valor calculado como string
-        addi s5, s5, 5            # i += 5
-        addi s1, s1, 5            # avança o contador do input 5 bytes
-        addi s0, s0, 5
-        j loop                    # repete o loop
+loop:                         # loop para cada 4 digitos da entrada
+    bge s5, s6, end           # if i >= 4, end
+    jal para_decimal          # passa 4 digitos para decimal
+    jal calcula_raiz          # calcula o valor da raiz
+    jal to_string             # armazena o valor calculado como string
+    addi s5, s5, 5            # i += 5
+    addi s1, s1, 5            # avança o contador do input 5 bytes
+    addi s0, s0, 5
+    j loop                    # repete o loop
 
-    end:
-        li s7, 10
-        sb s7, 4(s0)              # '\n'
-        jal write                 # imprime resultado
-        ret
+end:
+    li s7, 10
+    sb s7, -1(s0)             # '\n'
+    jal write                 # imprime resultado
+    li a0, 0
+    li a7, 93
+    ecall
 
 
 read:
@@ -45,8 +45,8 @@ read:
     ret
 
 para_decimal:
-    li a4, 0
     li t5, 10
+    li a4, 0
 
     lbu a0, 0(s1)             # armazena o primeiro digito da entrada em a0
     addi a0, a0, -48          # subtrai 48 do digito (ascii)
@@ -73,7 +73,6 @@ para_decimal:
     mul a3, a3, t2            # multiplica o valor em a0 pela potencia de 10
     add a4, a4, a3
     
-    li s2, 0
     mv s2, a4                 # armazena o valor decimal no registrador s2
     ret
 
@@ -95,7 +94,7 @@ loop_raiz:
     j loop_raiz               # retoma o loop
 
 continua:
-    mv s3, a2
+    mv s3, t6
     ret
 
 to_string:
@@ -108,7 +107,7 @@ to_string:
     #addi t2, t2, 1           # move o ponteiro
 
     li t3, 100                # terceiro digito
-    div t4, s2, t3            
+    div t4, s3, t3            
     addi t4, t4, 48          
     sb t4, 1(s0)              
     rem s3, s3, t3
@@ -139,12 +138,3 @@ write:
     li a7, 64                 # Código da chamada (write = 64)
     ecall                     # Invocar o SO
     ret
-
-
-
-# 0400 5337 2240 9166
-# 1708 9816 8519 4815
-# 0529 0087 0173 0597
-# 0628 0279 0803 0508
-
-
