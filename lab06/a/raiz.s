@@ -1,15 +1,21 @@
 .globl _start
 
+_start:
+    jal main                  # Salta para o rotulo main
+    li a0, 0
+    li a7, 93
+    ecall
+
 .bss
-raiz: .skip 0x20              # inicializa com zero   
-input_address: .skip 0x20     # buffer
+raiz: .skip 0x20              
+input_address: .skip 0x20     
 
 .text
 
 main:
     la s0, raiz               # armazena a raiz no registrador s0
-    la s1, input_address      # endereco do buffer de input
     jal read                  # le a entrada
+    mv s1, a1
     li s5, 0                  # i = 0
     li s6, 20                 # limite do for i = 4
     
@@ -20,11 +26,12 @@ main:
         jal to_string             # armazena o valor calculado como string
         addi s5, s5, 5            # i += 5
         addi s1, s1, 5            # avança o contador do input 5 bytes
+        addi s0, s0, 5
         j loop                    # repete o loop
 
     end:
         li s7, 10
-        sb s7, 19(s0)             # output[19] = '\n'
+        sb s7, 4(s0)              # '\n'
         jal write                 # imprime resultado
         ret
 
@@ -71,18 +78,20 @@ para_decimal:
     ret
 
 calcula_raiz:
-    li t6, 2
-    li a0, 0                  # i = 0
-    li a1, 10                 # limite 10 iteracoes
+    li t0, 0
+    li t1, 0
+    li t2, 2
+    li t3, 0
+    li t4, 10
     li t5, 0
-    divu a2, s2, t6           # chute inicial: metade do decimal obtido da entrada
+    div t6, s2, t2           # chute inicial: metade do decimal obtido da entrada
 
 loop_raiz:
-    bge a0, a1, continua      # if a0 >= 10: continua         
-    div t5, s2, a2            # t5 recebe y/k
-    add a2, a2, t5            # a2 = k + y/k
-    div a2, a2, t6            # t7 = (k + y/k) / 2
-    addi a0, a0, 1            # i++
+    bge t3, t4, continua      # if a0 >= 10: continua         
+    div t5, s2, t6            # t5 recebe y/k
+    add t6, t6, t5            # a2 = k + y/k
+    div t6, t6, t2            # t7 = (k + y/k) / 2
+    addi t3, t3, 1            # i++
     j loop_raiz               # retoma o loop
 
 continua:
@@ -90,9 +99,7 @@ continua:
     ret
 
 to_string:
-    la t2, raiz               # endereço do buffer
-    li t3, 1000              
-    li t5, 10                
+    li t3, 1000                             
 
     div t4, s3, t3            # isola o quarto digito
     addi t4, t4, 48           # soma 48 ao digito isolado
@@ -122,7 +129,7 @@ to_string:
     #addi t2, t2, 1  
 
     li t0, 32
-    sb t0, 4(s0)          
+    sb t0, 4(s0)         
     ret
 
 write:
@@ -133,11 +140,7 @@ write:
     ecall                     # Invocar o SO
     ret
 
-_start:
-    jal main                  # Salta para o rotulo main
-    li a0, 0
-    li a7, 93
-    ecall
+
 
 # 0400 5337 2240 9166
 # 1708 9816 8519 4815
