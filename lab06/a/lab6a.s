@@ -5,8 +5,8 @@ _start:
     
 
 .bss
-raiz: .skip 0x20              
-input_address: .skip 0x20     
+raiz: .word              
+input_address: .word    
 
 .text
 main:
