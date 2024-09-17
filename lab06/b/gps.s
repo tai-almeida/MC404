@@ -78,10 +78,9 @@ read_2:
 
 calcula_distancia:
     jal posicao_decimal       # passa coordenadas x para decimal
-    mv a2, a0
+    mv a2, a0                 # Yb em a2
     addi s1, s1, 6            # avanca o ponteiro do input 6 posicoes
-    jal posicao_decimal       # passa coordenadas y para decimal
-    mv a1, a0                 # Yb em a1
+    
     li s8, 0
     li s9, 0
 
@@ -113,40 +112,47 @@ calcula_distancia:
     div t5, t5, t3
 
     # calcula y (guarda em s8)
+    # y = (dA2 + YB2 - dB2) / 2YB
     li t0, 0
     li t1, 0
     li t3, 0
     li t6, 0
 
     mul t0, t2, t2            # t0 <- da²
-    mul t1, a1, a1            # t1 <- Yb²
+    mul t1, a2, a2            # t1 <- Yb²
     mul t3, t4, t4            # t3 <- db²
 
-    add t6, t0, t1
+    add t6, t0, t1            # t6 = da² +Yb²
     sub t6, t6, t3
     li t0, 0
     li t1, 2
-    mul t0, a1, t1
+    mul t0, a2, t1           # t0 = Yb * 2
     div t6, t6, t0
     mv s9, t6
 
+    jal posicao_decimal       # passa coordenadas y para decimal
+    mv a1, a0                 # Xc em a1
+
     # calcula x (guarda em s9)
     # x = (da²+Xc²-dc²)/2Xc
-    li t0, 0
+    li t0, 3
     li t1, 0
-    li t3, 0
-    li t6, 0
+    li t3, 10
 
-    mul t0, t4, t4
-    mul t1, a2, a2
-    mul t5, t4, t4
+    sub t1, s7, s4            # deltat = Tr - Ta
+    mul t2, t0, t1            # da = c*(Tr - Ta)
+    div t2, t2, t3            # velocidade da luz em nanosegundos
 
-    add t6, t0, t1
-    sub t6, t6, t3
+    mul t0, t2, t2        # da²
+    mul t1, a1, a1        # Xc²
+    mul t3, t5, t5        # dc²
+
+    add t6, t0, t1        # t6 = da² + Xc²
+    sub t6, t6, t3        # t6 = (da² +Xc² - dc²)
     li t0, 0
     li t1, 2
-    mul t0, a2, t1
-    div t6, t0, t6
+    mul t0, a1, t1
+    div t6, t6, t0        # t6 = (da² +Xc² - dc²)/2Xc
     mv s8, t6
     ret
 
@@ -159,29 +165,26 @@ posicao_decimal:
     lbu a0, 0(s1)
 
     li t2, 1000
-    lbu a1, 1(s1)
+    lb a1, 1(s1)
     addi a1, a1, -48
     mul a1, a1, t2
     add a5, a5, a1
 
     li t2, 100
-    lbu a2, 2(s1)
+    lb a2, 2(s1)
     addi a2, a2, -48
     mul a2, a2, t2
     add a5, a5, a2
 
     li t2, 10
-    lbu a3, 3(s1)
+    lb a3, 3(s1)
     addi a3, a3, -48
     mul a3, a3, t2
     add a5, a5, a3
 
-    lbu a4, 4(s1)
+    lb a4, 4(s1)
     addi a4, a4, -48
     add a5, a5, a4
-
-    #li t1, 32
-    #sb t1, 5(a5)
 
     beq t0, a0, then
     li a0, 0
@@ -221,30 +224,9 @@ tempo_decimal:
     li t2, 1                  # divide a potencia por 10
     mul a3, a3, t2            # multiplica o valor em a0 pela potencia de 10
     add a4, a4, a3
-    
-    #mv s4, a4                 # armazena o valor decimal no registrador s2
+
     addi s2, s2, 5
     ret
-
-# calcula_raiz:
-#     li t1, 0
-#     li t2, 2
-#     li t3, 0
-#     li t4, 21
-#     li t5, 0
-#     div t6, s2, t2           # chute inicial: metade do decimal obtido da entrada
-
-# loop_raiz:
-#     bge t3, t4, continua      # if a0 >= 10: continua         
-#     div t5, t0, t6            # t5 recebe y/k
-#     add t6, t6, t5            # a2 = k + y/k
-#     div t6, t6, t2            # t7 = (k + y/k) / 2
-#     addi t3, t3, 1            # i++
-#     j loop_raiz               # retoma o loop
-
-# continua:
-#     #mv s5, t6
-#     ret
 
 to_string_x:
     li t0, 0
@@ -268,28 +250,24 @@ to_string_x:
         addi t4, t4, 48           # soma 48 ao digito isolado
         sb t4, 1(s0)              # armazena o byte em s0 (registrador armazena raiz)
         rem s8, s8, t3          # guarda o resto da divisão em s2
-        #addi t2, t2, 1           # move o ponteiro
 
         li t3, 100                # terceiro digito
         div t4, s8, t3            
         addi t4, t4, 48          
         sb t4, 2(s0)              
-        rem s8, s8, t3
-        #addi t2, t2, 1            
+        rem s8, s8, t3        
 
         li t3, 10                 # segundo digito
         div t4, s8, t3            
         addi t4, t4, 48     
         sb t4, 3(s0)      
-        rem s8, s8, t3
-        #addi t2, t2, 1         
+        rem s8, s8, t3        
 
         li t3, 1                  # terceiro digito
         div t4, s8, t3            
         addi t4, t4, 48           
         sb t4, 4(s0)              
-        rem s8, s8, t3
-        #addi t2, t2, 1  
+        rem s8, s8, t3 
 
         li t0, 32
         sb t0, 5(s0) 
@@ -319,28 +297,24 @@ to_string_y:
         addi t4, t4, 48           # soma 48 ao digito isolado
         sb t4, 1(s0)              # armazena o byte em s0 (registrador armazena raiz)
         rem s9, s9, t3          # guarda o resto da divisão em s2
-        #addi t2, t2, 1           # move o ponteiro
 
         li t3, 100                # terceiro digito
         div t4, s9, t3            
         addi t4, t4, 48          
         sb t4, 2(s0)              
-        rem s9, s9, t3
-        #addi t2, t2, 1            
+        rem s9, s9, t3           
 
         li t3, 10                 # segundo digito
         div t4, s9, t3            
         addi t4, t4, 48     
         sb t4, 3(s0)      
-        rem s9, s9, t3
-        #addi t2, t2, 1         
+        rem s9, s9, t3        
 
         li t3, 1                  # terceiro digito
         div t4, s9, t3            
         addi t4, t4, 48           
         sb t4, 4(s0)              
         rem s9, s9, t3
-        #addi t2, t2, 1  
 
         li t0, 32
         sb t0, 5(s0)
@@ -351,7 +325,7 @@ to_string_y:
 write:
     li a0, 1                  # a0: File descriptor = 1 (stdout)
     la a1, resultado          # buffer
-    li a2, 12
+    li a2, 20
     li a7, 64                 # Código da chamada (write = 64)
     ecall                     # Invocar o SO
     ret
