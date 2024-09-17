@@ -24,6 +24,8 @@ main:
     # s7: Tr
     # s8: x
     # s9: y
+    addi sp, sp, -4
+    sw ra, 0(sp)
     la s0, resultado          # guarda endereco do resultado
     la s1, linha_1
     jal read_1                  
@@ -55,6 +57,7 @@ main:
         li t6, 10             # '\n'
         sb t6, -1(s0)
         jal write
+
         li a0, 0
         li a7, 93
         ecall
@@ -77,6 +80,8 @@ read_2:
     ret
 
 calcula_distancia:
+    addi sp, sp, -4
+    sw ra, 0(sp)
     jal posicao_decimal       # passa coordenadas x para decimal
     mv a2, a0                 # Yb em a2
     addi s1, s1, 6            # avanca o ponteiro do input 6 posicoes
@@ -84,12 +89,12 @@ calcula_distancia:
     li s8, 0
     li s9, 0
 
-
     # calcula da (guarda em t2)
     li t0, 3                  # velocidade da luz (c)
     li t1, 0
     li t2, 0
     li t3, 10
+
     # c = da/deltat
     # c = 3x10⁸ m/s = 0,3 m/nanosegundos
     sub t1, s7, s4            # deltat = Tr - Ta
@@ -154,15 +159,18 @@ calcula_distancia:
     mul t0, a1, t1
     div t6, t6, t0        # t6 = (da² +Xc² - dc²)/2Xc
     mv s8, t6
+    lw ra, 0(sp)
+    addi sp, sp, 4
     ret
 
 
 posicao_decimal:
+    /* Extrai as coordenadas dos pontos de entrada (s1) */
     li t0, 45
     li a5, 0
     li a0, 0
 
-    lbu a0, 0(s1)
+    lbu a0, 0(s1)             # armazena o sinal
 
     li t2, 1000
     lb a1, 1(s1)
@@ -186,16 +194,16 @@ posicao_decimal:
     addi a4, a4, -48
     add a5, a5, a4
 
-    beq t0, a0, then
+    beq t0, a0, then          # verifica se eh negativo
     li a0, 0
     mv a0, a5
     ret
-    then:
-        li t1, -1             # valor negativo
-        mul a5, a5, t1
-        li a0, 0
-        mv a0, a5
-        ret 
+then:
+    li t1, -1             # valor negativo
+    mul a5, a5, t1
+    li a0, 0
+    mv a0, a5
+    ret 
 
 tempo_decimal:
     li t5, 10
