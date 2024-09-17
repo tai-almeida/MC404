@@ -1,12 +1,8 @@
-# +0700 -0100
-# 2000 0000 2240 2300
-
 .globl _start
 
 _start:
     jal main                  # Salta para o rotulo main
     
-
 .bss
 resultado: .word              
 linha_1: .space 12
@@ -61,7 +57,6 @@ main:
         li a0, 0
         li a7, 93
         ecall
-
 
 read_1:
     li a0, 0                  # file descriptor = 0 (stdin)
@@ -162,7 +157,6 @@ calcula_distancia:
     lw ra, 0(sp)
     addi sp, sp, 4
     ret
-
 
 posicao_decimal:
     /* Extrai as coordenadas dos pontos de entrada (s1) */
@@ -337,7 +331,6 @@ write:
     li a7, 64                 # Código da chamada (write = 64)
     ecall                     # Invocar o SO
     ret
-
 
 if:
     beq s3, t2, caso1
