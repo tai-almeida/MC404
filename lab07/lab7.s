@@ -39,30 +39,31 @@ main:
     jal confere_p2
     jal confere_p3
     la s6, erro
-    li t0, 1
-    beq t0, a5, ha_erro
-    beq t0, a6, ha_erro
-    beq t0, a7, ha_erro
+    
+    li t4, 0
+    addi t4, t4, 48
+    sb t4, 0(s6)
+    li t4, 10
+    sb t4, 1(s6)
+    bnez t0, ha_erro
+    bnez t1, ha_erro
+    bnez t2, ha_erro
     j end
     ha_erro:
-        addi t0, t0, 48
-        sb t0, 0(s6)
-        li t0, 10
-        sb t0, 1(s6)
+        li t4, 1
+        addi t4, t4, 48
+        sb t4, 0(s6)
+        li t4, 10
+        sb t4, 1(s6)
         j end 
-    end:
-        # impressoes
-        li t0, 0
-        addi t0, t0, 48
-        sb t0, 0(s6)
-        li t0, 10
-        sb t0, 1(s6)
-        jal write_encode
-        jal write_decode
-        jal write_erro
-        li a0, 0
-        li a7, 93
-        ecall
+end:
+    # impressoes
+    jal write_encode
+    jal write_decode
+    jal write_erro
+    li a0, 0
+    li a7, 93
+    ecall
 
 
 read:
@@ -211,29 +212,23 @@ decode:
 
 confere_p1:
     xor t0, s1, a1              
-    xor t0, s1, a2
-    xor t0, s1, a4
-
-    li t1, 85                   # mask t1 = 0b1010101
-    and a5, t0, t1
+    xor t0, t0, a2
+    xor t0, t0, a4
+    addi t0, t0, -48
     ret 
 
 confere_p2:
-    xor t0, s2, a1              
-    xor t0, s2, a3
-    xor t0, s2, a4
-
-    li t1, 51                   # mask t1 = 0b0110011
-    and a6, t0, t1 
+    xor t1, s2, a1              
+    xor t1, t1, a3
+    xor t1, t1, a4
+    addi t1, t1, -48
     ret
 
 confere_p3:
-    xor t0, s3, a2              
-    xor t0, s3, a3
-    xor t0, s3, a4
-
-    li t1, 15                   # mask t1 = 0b1111
-    and a7, t0, t1 
+    xor t2, s3, a2              
+    xor t2, t2, a3
+    xor t2, t2, a4
+    addi t2, t2, -48
     ret
 
 
