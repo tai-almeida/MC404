@@ -106,7 +106,7 @@ formata_imagem:
         bge a1, s2, prox_linha
         lbu a3, 0(s1)
         li a2, 0
-        addi a3, a3, -48            # converte byte para inteiro
+        # addi a3, a3, -48            # converte byte para inteiro
 
         # Considera-se que a3 = R = G = B e Alpha = 255 sempre
         slli t2, a3, 24             # a2[31..24]: Red
