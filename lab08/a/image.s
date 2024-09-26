@@ -152,8 +152,3 @@ setCanvasSize:
     li a7, 2201
     ecall
     ret
-
-#setScaling:
-    # TODO: atualizar a escala do canvas
-    # so usar depois de setar todos os pixels
-
