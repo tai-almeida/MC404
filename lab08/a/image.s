@@ -66,9 +66,9 @@ dimensiona:
         lbu t0, 0(s1)     # armazena primeiro byte
         li t5, 32
         
-
-        addi t0, t0, -48         # passa para inteiro
         beq t0, t5, get_altura   # encontrou um espaco
+        addi t0, t0, -48         # passa para inteiro
+        
 
         mul s2, s2, t2           # multiplica s2 por 10 (posicionar digito)
         add s2, s2, t0
@@ -79,38 +79,38 @@ dimensiona:
         j get_largura
 
     get_altura:
-        lbu t1, 1(s1)
+        addi s1, s1, 1
+        lbu t1, 0(s1)
         li t5, 10
-        addi t1, t1, -48
         beq t1, t5, end_dimensiona
-
+        addi t1, t1, -48
         
         mul s3, s3, t2
         add s3, s3, t1
 
-        addi s1, s1, 1
         # addi s3, s3, 1
         j get_altura
     
     
     end_dimensiona:
+        addi s1, s1, 5
         ret
 
 formata_imagem:
     addi sp, sp, -4
     sw ra, (sp)
-    li a0, 0                # i = 0
-    li a1, 0                # j = 0
+    li a1, 0                # i = 0
+    li a0, 0                # j = 0
 
     loop_colunas:
-        bge a1, s2, prox_linha
+        bge a0, s2, prox_linha
         lbu a3, 0(s1)
         li a2, 0
         # addi a3, a3, -48            # converte byte para inteiro
 
         # Considera-se que a3 = R = G = B e Alpha = 255 sempre
         slli t2, a3, 24             # a2[31..24]: Red
-        or a2, a2, t4
+        or a2, a2, t2
 
         slli t3, a3, 16             # a2[23..16]: Green
         or a2, a2, t3
@@ -120,25 +120,26 @@ formata_imagem:
 
         li t5, 255                  # a2[7..0]: Alpha 
         or a2, a2, t5
-        
-        addi s1, s1, 1
-        addi a1, a1, 1              # j++
+
 
         jal setPixel
+
+        addi s1, s1, 1
+        addi a0, a0, 1              # j++
+
         j loop_colunas
 
     prox_linha:
-        bge a0, s3, fim_matriz
-        li a1, 0
-        addi a0, a0, 1              # i++
+        bge a1, s3, fim_matriz
+        li a0, 0
+        addi a1, a1, 1              # i++
         j loop_colunas
     
     fim_matriz:
-        addi s1, s1, 1
+        # addi s1, s1, 1
         lw ra, (sp)
         addi sp, sp, 4
-        ret
-        
+        ret  
 
 setPixel:
     li a7, 2200          # syscall setPixel (2200)
@@ -146,8 +147,8 @@ setPixel:
     ret
 
 setCanvasSize:
-    lw a0, 0(s2)
-    lw a1, 0(s3)
+    mv a0, s2
+    mv a1, s3
     li a7, 2201
     ecall
     ret
