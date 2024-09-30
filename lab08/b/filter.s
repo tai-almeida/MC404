@@ -32,7 +32,10 @@ main:
 
     jal dimensiona       # guarda os valores de largura e altura da imagem
     jal setCanvasSize
+    jal cria_filtro
+    jal inicializa_output
     jal formata_imagem
+    jal imprime_imagem
     jal close
 
     li a0, 0
@@ -74,8 +77,8 @@ dimensiona:
         addi t0, t0, -48         # passa para inteiro
         
 
-        mul s2, s2, t2           # multiplica s2 por 10 (posicionar digito)
-        add s2, s2, t0
+        mul s3, s3, t2           # multiplica s2 por 10 (posicionar digito)
+        add s3, s3, t0
 
         addi s1, s1, 1           # incrementa ponteiro do input
         j get_largura
@@ -87,8 +90,8 @@ dimensiona:
         beq t1, t5, end_dimensiona
         addi t1, t1, -48
         
-        mul s3, s3, t2
-        add s3, s3, t1
+        mul s2, s2, t2
+        add s2, s2, t1
 
         j get_altura
     
@@ -124,7 +127,7 @@ formata_imagem:
         li t5, 255                  # a2[7..0]: Alpha 
         or a2, a2, t5
 
-        sb a2, 0(s5)                # armazena byte na matriz de output
+        sb a2, 0(s4)                # armazena byte na matriz de output
         # jal setPixel
 
         addi s1, s1, 1
@@ -149,112 +152,140 @@ formata_imagem:
 
 cria_filtro:
     la s6, matriz_filtro
-    li t2, 3
-    li t4, -1
-    li t5, 8
+    li t0, -1
+    li t1, 8
+    sb t0, 0(s6)
+    sb t0, 1(s6)
+    sb t0, 2(s6)
+    sb t0, 3(s6)
+    sb t1, 4(s6)
+    sb t0, 5(s6)
+    sb t0, 6(s6)
+    sb t0, 7(s6)
+    sb t0, 8(s6)
+    ret
+    
+inicializa_output:
+    li a0, 0        # i = 0
+    li a1, 0        # j = 0
     li t0, 0
-    li t1, 9
-    mv t0, s7
-    
-    1:
-        bge t0, t1, 2f
-        sb t4, 0(t0)
-        addi t0, t0, 1
-        j 1b
-    2:
-        sb t5, 4(t0)
-        mv s6, t0
+    mv a5, s5       # salva o endereco inicial em a5
+    mv a6, s5
+    for_j:
+        bge a1, s3, for_i 
+        sb t0, 0(s5)    # inicializa todas as posicoes com pixel preto
+        addi a1, a1, 1
+        j for_j
+    for_i:
+        bge a0, s2, end_output
+        li a1, 0
+        addi a0, a0, 1
+        j for_j
+    end_output:
         ret
-    
 
 aplica_filtro:
-    la s6, matriz_output
-    li a1, 0            # i = 0
-    li a0, 0            # j = 0
+    addi sp, sp, -4
+    sw ra, (sp)
+
+    la s4, matriz_input
+    la s5, matriz_output
+    la s6, matriz_filtro
+
+    li a1, 1            # i = 1
+    li a0, 1            # j = 1
     li t2, 0            # k = 0
     li t3, 0            # q = 0
+    li t4, 3            # dimensao do filtro
+    li a2, 0
+
+    addi a3, s3, -1
+    addi a4, s2, -1
+
+    loop_i:
+        bge a1, a4, fim_filtro      # fim das linhas
+        loop_j:
+            bge a0, a3, next_line
+
+            loop_k:
+                bge t2, t4, prox_pixel
+                li t3, 0
+                loop_q:
+                    bge t3, t4, prox_pixel
+                    lbu t5, 0(s4)
+                    lb t6, 0(s6)
+                    mul t4, t5, t6      # pixel * filtro
+                    add a2, a2, t4      # salva resultado em a2
+                    addi s5, s5, 1
+                    addi s4, s4, 1      # avanca input
+                    addi s6, s6, 1      # avanca filtro
+                    addi t3, t3, 1      # q++
+                    j loop_q
+                addi t2, t2, 1
+                j loop_k
+
+            prox_pixel:
+                jal verifica_valor      # verifica se valor esta entre 0 e 255
+                sb a2, 0(s5)
+                addi a0, a0, 1
+                addi s5, s5, 1
+                j loop_i
+            next_line:
+                addi a1, a1, 1
+                li a0, 1
+                j loop_i
     
-    li t1, 0
-    addi t4, s3, -1     # t4 = largura - 1
-    addi t5, s2, -1     # t5 = altura - 1
+    fim_filtro:
+        lw ra, (sp)
+        addi sp, sp, 4
+        ret
+ 
+verifica_valor:
+    li a3, 255
+    li a4, 0
 
-    1:
-        li t0, 2
-        bge t3, t0, 2f      # q >= 3, proxima linha
+    ble a2, a4, pixel_preto
+    bge a2, a3, pixel_branco
 
-        add t5, a1, t2
-        addi t5, t5, -1     # t5 <- i + k - 1
-        add t6, a0, t3
-        addi t6, t6, -1     # t6 <- j + q - 1
-        jal pixel_preto     # pixel preto nas bordas
-        bne a3, t1, cont    # o pixel foi pintado de preto
-        
-        # multiplicar o byte convertido pra int pelo filtro
-        lbu t0, 0(s4)
-        lb t1, 0(s6)
-        addi t0, t0, -48
-        mul a2, t0, t1
+    j end_verifica
+    pixel_preto:
+        mv a2, a4
+        j end_verifica
+    pixel_branco:
+        mv a2, a3
+        j end_verifica
+    end_verifica:
+        ret
 
-
-        # avanca os ponteiros
-        addi s4, s4, 1
-        addi s6, s6, 1
-        addi t3, t3, 1
-
-        cont:
-            j 1b
-
-    2:
-        bge t2, t0, 3f      # k >= 3, sai do loop
-        li t3, 0
-        addi t2, t2, 1      
-        j 1b
-
-    3:
-        # TODO: implementar
+imprime_imagem:
+    addi sp, sp, -4
+    sw ra, (sp) 
     
+    li a1, 0        # i = 0
+    li a0, 0        # j = 0
+
+    loop_imagem_y:
+        bge a0, s3, loop_imagem_x
+        lbu a2, 0(s5)
+        jal setPixel
+        addi a0, a0, 1
+        j loop_imagem_y
+    loop_imagem_x:
+        bge a1, s2, fim_imagem
+        li a0, 0
+        addi a1, a1, 1
+        j loop_imagem_y
+    fim_imagem:
+        lw ra, (sp)
+        addi sp, sp, 4
+        ret
     
-
-
 
 setPixel:
     li a7, 2200          # syscall setPixel (2200)
     ecall
     ret
 
-pixel_preto:
-        li a7, 48
-        li a3, 0
-        bge t6, a5, 0f      # t6 >= largura da matriz
-        ble t6, a1, 1f      # t6 <= 0
-        ble t5, a1, 2f      # t5 <= 0
-        bge t5, a6, 3f      # t5 >= altura da matriz
-        ret
-        0:
-            addi t6, s3, -1
-            sb a7, 0(s5)
-            addi s4, s4, 1
-            li a3, 1
-            ret
-        1:
-            li t6, 48
-            sb t6, 0(s5)
-            addi s4, s4, 1
-            li a3, 1
-            ret
-        2: 
-            li t5, 48
-            sb t5, 0(s5)
-            addi s4, s4, 1
-            li a3, 1
-            ret
-
-        3:
-            addi t5, s2, -1
-            sb a7, 0(s5)
-            addi s4, s4, 1
-            li a3, 1
-            ret
 
 setCanvasSize:
     mv a0, s2
