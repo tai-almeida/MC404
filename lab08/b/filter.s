@@ -33,9 +33,9 @@ main:
     jal dimensiona       # guarda os valores de largura e altura da imagem
     jal setCanvasSize
     jal cria_filtro
-    jal inicializa_output
     jal formata_imagem
-    jal imprime_imagem
+    jal aplica_filtro
+    # jal imprime_imagem
     jal close
 
     li a0, 0
@@ -101,17 +101,18 @@ dimensiona:
         ret
 
 formata_imagem:
-    addi sp, sp, -4
-    sw ra, (sp)
+    addi sp, sp, -8
+    sw s4, 0(sp)
+    sw ra, 4(sp)
     li a1, 0                # i = 0
     li a0, 0                # j = 0
     li t1, 0                # k = 0
     li t0, 0                # l = 0
+    
 
     loop_colunas:
         bge a0, s2, prox_linha
         lbu a3, 0(s1)       # carrega byte da memoria para a3
-        sb a3, 0(s4)        # armazena byte na memoria em uma matriz
         li a2, 0
 
         # Considera-se que a3 = R = G = B e Alpha = 255 sempre
@@ -146,7 +147,7 @@ formata_imagem:
         j loop_colunas
     
     fim_matriz:
-        lw ra, (sp)
+        lw ra, 4(sp)
         addi sp, sp, 4
         ret  
 
@@ -164,75 +165,85 @@ cria_filtro:
     sb t0, 7(s6)
     sb t0, 8(s6)
     ret
-    
-inicializa_output:
-    li a0, 0        # i = 0
-    li a1, 0        # j = 0
-    li t0, 0
-    mv a5, s5       # salva o endereco inicial em a5
-    mv a6, s5
-    for_j:
-        bge a1, s3, for_i 
-        sb t0, 0(s5)    # inicializa todas as posicoes com pixel preto
-        addi a1, a1, 1
-        j for_j
-    for_i:
-        bge a0, s2, end_output
-        li a1, 0
-        addi a0, a0, 1
-        j for_j
-    end_output:
-        ret
 
 aplica_filtro:
+    lw s4, 0(sp)
+    addi sp, sp, 4
     addi sp, sp, -4
     sw ra, (sp)
 
-    la s4, matriz_input
-    la s5, matriz_output
-    la s6, matriz_filtro
-
-    li a1, 1            # i = 1
-    li a0, 1            # j = 1
+    li a1, 0            # i = 1
+    li a0, 0            # j = 1
     li t2, 0            # k = 0
     li t3, 0            # q = 0
     li t4, 3            # dimensao do filtro
     li a2, 0
+    li a5, 0
+    li a6, 0
 
     addi a3, s3, -1
     addi a4, s2, -1
 
     loop_i:
-        bge a1, a4, fim_filtro      # fim das linhas
+        bge a1, s2, fim_filtro      # fim das linhas
         loop_j:
-            bge a0, a3, next_line
+            bge a0, s3, next_line
 
             loop_k:
                 bge t2, t4, prox_pixel
                 li t3, 0
                 loop_q:
-                    bge t3, t4, prox_pixel
-                    lbu t5, 0(s4)
-                    lb t6, 0(s6)
-                    mul t4, t5, t6      # pixel * filtro
-                    add a2, a2, t4      # salva resultado em a2
-                    addi s5, s5, 1
-                    addi s4, s4, 1      # avanca input
-                    addi s6, s6, 1      # avanca filtro
-                    addi t3, t3, 1      # q++
-                    j loop_q
+                    add a0, a0, t3
+                    addi a0, a0, -1     # a0 <- q+k-1
+
+                    add a1, a1, t2
+                    addi a1, a1, -1     # a1 <- i+k-1
+
+                    bge t3, t4, pula_linha_filtro
+
+                    if_borda:
+                        ble a1, a5, borda      # if i = 0
+                        bge a1, a3, borda     # if i >= x
+                        ble a0, a5, borda      # if j = 0
+                        bge a0, a4, borda     # if j >= y
+                        j cont
+                    borda:
+                        li a6, 0
+                        sb a6, 0(s5)
+                        add a2, a2, a6
+                        addi s5, s5, 1
+                        addi a0, a0, 1
+                        addi t3, t3, 1
+                        j loop_q
+                    cont:
+                        lbu t5, 0(s4)
+                        lb t6, 0(s6)
+                        mul t4, t5, t6      # pixel * filtro
+                        add a6, a6, t4      # salva resultado em a6
+                        jal verifica_valor      # verifica se valor esta entre 0 e 255
+                        add a2, a2, a6
+                        addi s5, s5, 1
+                        addi s4, s4, 1      # avanca input
+                        addi s6, s6, 1      # avanca filtro
+                        addi t3, t3, 1      # q++
+                        j loop_q
+
+            pula_linha_filtro:
+                li t3, 0
                 addi t2, t2, 1
                 j loop_k
-
             prox_pixel:
-                jal verifica_valor      # verifica se valor esta entre 0 e 255
+                jal setPixel
+                li t2, 0
+                li t3, 0
                 sb a2, 0(s5)
                 addi a0, a0, 1
                 addi s5, s5, 1
+                # addi t2, t2, 1
                 j loop_i
             next_line:
                 addi a1, a1, 1
-                li a0, 1
+                li a0, 0
                 j loop_i
     
     fim_filtro:
@@ -244,18 +255,17 @@ verifica_valor:
     li a3, 255
     li a4, 0
 
-    ble a2, a4, pixel_preto
-    bge a2, a3, pixel_branco
-
-    j end_verifica
+    blt a6, a4, pixel_preto
+    bgt a6, a3, pixel_branco
+    ret
     pixel_preto:
-        mv a2, a4
-        j end_verifica
-    pixel_branco:
-        mv a2, a3
-        j end_verifica
-    end_verifica:
+        li a6, 0
         ret
+    pixel_branco:
+        li a6, 255
+        ret
+
+
 
 imprime_imagem:
     addi sp, sp, -4
