@@ -103,10 +103,6 @@ formata_imagem:
     addi sp, sp, -8
     sw s4, 0(sp)
     sw ra, 4(sp)
-    li a1, 0                # i = 0
-    li a0, 0                # j = 0
-    li t1, 0                # k = 0
-    li t0, 0                # l = 0
     
     # Considera-se que a7 = R = G = B e Alpha = 255 sempre
     slli t2, a7, 24             # a2[31..24]: Red
@@ -120,6 +116,9 @@ formata_imagem:
 
     li t5, 255                  # a2[7..0]: Alpha 
     or a2, a2, t5
+    lw s4, 0(sp)
+    lw ra, 4(sp)
+    addi sp, sp, 8
     ret  
 
 cria_filtro:
@@ -138,39 +137,44 @@ cria_filtro:
     ret
 
 aplica_filtro:
-    lw s4, 0(sp)
-    addi sp, sp, 4
     addi sp, sp, -4
     sw ra, (sp)
 
     li a1, 0            # i = 0
     li a0, 0            # j = 0
     li t2, 0            # k = 0
-    li t3, 0            # q = 0
-    li t4, 3            # dimensao do filtro
+    li t3, 0            # q = 0           
     li a2, 0
     li a5, 0
     li a6, 0
     li a3, 0
     li a4, 0
 
-    # addi s3, s3, -1
-    # addi s2, s2, -1
-    #addi a3, s3, -1
-    #addi a4, s2, -1
-
     loop_i:
         bge a1, s2, fim_filtro      # fim das linhas
+        li a7, 0
         loop_j:
             bge a0, s3, next_line
+            ble a1, a5, borda      # if i = 0
+            bge a1, s2, borda     # if i >= x
+            ble a0, a5, borda      # if j = 0
+            bge a0, s3, borda     # if j >= y
+            j loop_k
+            borda:
+                li a7, 0
+                j prox_pixel
             loop_k:
+                li t4, 3        # dimensao do filtro
                 bge t2, t4, prox_pixel
-                li t3, 0
                 mv t1, a1
                 add a1, a1, t2
                 addi a1, a1, -1     # a1 <- i+k-1
                 loop_q:
+                    li t4, 3        # dimensao do filtro
+                    bge t3, t4, pula_linha_filtro
                     mv t0, a0
+                    
+                    else:
                     add a0, a0, t3
                     addi a0, a0, -1     # a0 <- q+k-1
                     
@@ -178,44 +182,32 @@ aplica_filtro:
                     # 0(s4) = (i+k-1) * largura + (j+q-1)
                     mul t5, a1, s3
                     add t5, t5, a0
-                    li a3, 0
-                    for_s4:
-                        bge a3, t5, fim_s4
-                        addi s4, s4, 1
-                        j for_s4
-                    fim_s4:
 
-                    if_borda:
-
-                        ble a1, a5, borda      # if i = 0
-                        bge a1, s2, borda     # if i >= x
-                        ble a0, a5, borda      # if j = 0
-                        bge a0, s3, borda     # if j >= y
-                        j cont
-                    borda:
-                        li a6, 0
-                        add a7, a7, a6
-                        mv a0, t0
-                        addi t3, t3, 1
-                        j loop_q
+                    
+    
+                    for_s1:
+                        bge a3, t5, cont
+                        addi s1, s1, 1
+                        addi a3, a3, 1
+                        j for_s1
+                    
                     cont:
-                        mv a0, t0
-                        lbu t5, 0(s4)
+                        lbu t5, 0(s1)
                         lb t6, 0(s6)
                         mul t4, t5, t6      # pixel * filtro
                         add a6, a6, t4      # salva resultado em a6
                         jal verifica_valor      # verifica se valor esta entre 0 e 255
                         add a7, a7, a6
-                        addi s4, s4, 1      # avanca input
+                        # addi s4, s4, 1      # avanca input
                         addi s6, s6, 1      # avanca filtro
                         addi t3, t3, 1      # q++
+                        
                         j loop_q
 
             pula_linha_filtro:
-                li t3, 0
-                addi t2, t2, 1
                 mv a1, t1
                 mv a0, t0
+                addi t2, t2, 1
                 j loop_k
             prox_pixel:
                 li t2, 0
@@ -223,16 +215,13 @@ aplica_filtro:
                 mv a1, t1
                 mv a0, t0
                 jal formata_imagem
-                mv a2, a7
                 jal setPixel
-                li a7, 0
                 addi a0, a0, 1
                 j loop_i
-            next_line:
-                mv a1, t1
-                addi a1, a1, 1
-                li a0, 0
-                j loop_i
+        next_line:
+            addi a1, a1, 1
+            li a0, 0
+            j loop_i
     
     fim_filtro:
         lw ra, (sp)
@@ -240,11 +229,11 @@ aplica_filtro:
         ret
  
 verifica_valor:
-    li a3, 255
-    li a4, 0
+    li t5, 255
+    li t6, 0
 
-    ble a6, a4, pixel_preto
-    bge a6, a3, pixel_branco
+    ble a6, t6, pixel_preto
+    bge a6, t5, pixel_branco
     ret
     pixel_preto:
         li a6, 0
