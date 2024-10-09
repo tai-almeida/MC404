@@ -1,7 +1,7 @@
 #include "lib.h"
 
 char buffer[100];
-int number = 635;
+int number = 2024;
 
 #define NULL 0
 
@@ -11,8 +11,8 @@ void run_operation(int op){
 
     head_node.val1 = 10; head_node.val2 = -4; head_node.next = &node_1;
     node_1.val1 = 56; node_1.val2 = 78; node_1.next = &node_2;
-    node_2.val1 = -654; node_2.val2 = 590; node_2.next = &node_3;
-    node_3.val1 = -100; node_3.val2 = -43; node_3.next = NULL;
+    node_2.val1 = -654; node_2.val2 = 590; node_2.next = NULL;
+    //node_3.val1 = -100; node_3.val2 = -43; node_3.next = NULL;
      
     switch (op){
         case 0:

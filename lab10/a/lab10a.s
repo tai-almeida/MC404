@@ -1,6 +1,7 @@
 .bss
-input: .skip 35
+output: .skip 35
 string_puts: .skip 35
+input: .skip 35
 .text
 
 .globl linked_list_search
@@ -21,14 +22,14 @@ linked_list_search:
         lw a2, 0(a0)                # carrega val1
         lw a3, 4(a0)                # carrega val2
         
-        add a1, a2, a3
-        beq a1, s1, encontrou       # val1 + val2 = input
+        add t1, a2, a3
+        beq t1, a1, encontrou       # val1 + val2 = input
 
         addi t0, t0, 1              # incrementa o contador
-        lw t0, 8(a0)                # carrega o endereco do proximo no
+        lw t1, 8(a0)                # carrega o endereco do proximo no
 
-        beqz t0, nao_existe         # se no aponta para NULL
-        mv a0, t0                   # atualiza endereco para o do prox no
+        beqz t1, nao_existe         # se no aponta para NULL
+        mv a0, t1                   # atualiza endereco para o do prox no
         j percorre_nos
     nao_existe:
         li a0, -1
@@ -140,73 +141,119 @@ itoa:
     li t0, 0
     li t1, 45
     li t3, 10
+    la a4, output
+    mv a3, a4
     
     blt a0, t0, negativo
     j else
     negativo:
         li t4, -1
-        sb t1, 0(s2)
-        addi s2, s2, 1
+        sb t1, 0(a3)
+        addi a3, a3, 1
         mul a0, a0, t4
     else:
         beq a2, t3, base10
         j base16
     base10:
+        li t1, 1000
         li t5, 100
+        bge a0, t1, milhar
         bge a0, t5, centena
         bge a0, t3, dezena
         j unidade
+        milhar:
+            mv t4, a0
+            div t4, t4, t1
+            rem a0, a0, t1
+            addi t6, t4, 48
+            sb t6, 0(a3)
+            addi a3, a3, 1
         centena:
             mv t4, a0
             div t4, t4, t5
             rem a0, a0, t5
             addi t6, t4, 48
-            sb t6, 0(s2)
-            addi s2, s2, 1
+            sb t6, 0(a3)
+            addi a3, a3, 1
         dezena:
             mv t4, a0
             div t4, t4, t3
             rem a0, a0, t3
             addi t6, t4, 48
-            sb t6, 0(s2)
-            addi s2, s2, 1
+            sb t6, 0(a3)
+            addi a3, a3, 1
             div t3, t3, t3
         unidade:
             mv t4, a0
             addi t6, t4, 48
-            sb t6, 0(s2)
-            addi s2, s2, 1
+            sb t6, 0(a3)
+            addi a3, a3, 1
+            j fim
     base16:
+        li t1, 0x1000
         li t5, 256
         li t3, 16
+        bge a0, t1, potencia3
         bge a0, t5, potencia2
         bge a0, t3, potencia1
         j potencia0
+        potencia3:
+            mv t4, a0
+            div t4, t4, t1
+            li t2, 10
+            rem a0, a0, t1
+            bge t4, t2, 1f
+            addi t6, t4, 48
+            j 2f
+            1:
+                addi t6, t4, 55
+            2:
+                sb t6, 0(a3)
+                addi a3, a3, 1
+
         potencia2:
             mv t4, a0
             div t4, t4, t5
+            li t2, 10
             rem a0, a0, t5
+            bge t4, t2, 1f
             addi t6, t4, 48
-            sb t6, 0(s2)
-            addi s2, s2, 1
+            j 2f
+            1:
+                addi t6, t4, 55
+            2:
+                sb t6, 0(a3)
+                addi a3, a3, 1
         potencia1:
             mv t4, a0
             div t4, t4, t3
             rem a0, a0, t3
+            bge t4, t2, 1f
             addi t6, t4, 48
-            sb t6, 0(s2)
-            addi s2, s2, 1
-            div t3, t3, t3
+            j 2f
+            1:
+                addi t6, t4, 55
+            2:
+                sb t6, 0(a3)
+                addi a3, a3, 1
+                div t3, t3, t3
         potencia0:
             mv t4, a0
+            bge t4, t2, 1f
             addi t6, t4, 48
-            sb t6, 0(s2)
-            addi s2, s2, 1
+            j 2f
+            1:
+                addi t6, t4, 55
+            2:
+                sb t6, 0(a3)
+                addi a3, a3, 1
     fim:
         li t3, 10
-        sb t3, 0(s2)
-        mv a0, s2
+        sb t3, 0(a3)
+        mv a0, a4
         ret
+
+
     
 exit:
     li a0, 0
