@@ -21,34 +21,73 @@ profundidade: .word 1
 recursive_tree_search:
     /* a0: endereco da raiz da arvore
        a1: valor procurado */
-    addi sp, sp, -4
-    sw ra, 0(sp)
     li t0, 1            # profundidade (raiz esta no nivel 1)
+    mv fp, ra
+    li t4, 0            # conta passagens pela raiz
+    mv a2, a0
     loop_arvore:
+        addi sp, sp, -8
+        sw ra, 0(sp)
+        sw a0, 4(sp)
+
+        bne a0, a2, 1f
+        addi t4, t4, 1
+
+        1:
         lw t2, 0(a0)        # verifica valor na raiz
         beq t2, a1, encontrou
+
         # comeca percorrendo a arvore pela esquerda
         lw t1, 4(a0)        # carrega endereco do no a esquerda
         beqz t1, direita    # se apontar pra nulo, vai para a esquerda
         mv a0, t1           # atualiza endereco da raiz
         addi t0, t0, 1      # proximo nivel da arvore
         jal loop_arvore
+
+        lw a0, 4(sp)
+        lw ra, 0(sp)
+        addi sp, sp, 8
+        bne a0, a2, 1f
+        addi t4, t4, 1
+        1:
         direita:
             lw t1, 8(a0)
             beqz t1, nao_existe
-            mv a0, t1
             addi t0, t0, 1
-            ret
+            mv a0, t1
+            addi sp, sp, -8
+            sw ra, 0(sp)
+            sw a0, 4(sp)
+            jal loop_arvore
+            bne a0, a2, 1f
+            addi t4, t4, 1
+            1:
+                lw a0, 4(sp)
+                lw ra, 0(sp)
+                addi sp, sp, 8
+                addi t0, t0, -1
+                mv a0, t0
+                ret
     nao_existe:
+        lw a0, 4(sp)
         lw ra, 0(sp)
-        addi sp, sp, 4
-        li a0, 0
+        addi sp, sp, 8
+        addi t0, t0, -1
+        li t3, 3
+        beq t4, t3, nulo
         ret
     encontrou:
+        lw a0, 4(sp)
         lw ra, 0(sp)
-        addi sp, sp, 4
+        addi sp, sp, 8
         mv a0, t0
+        mv ra, fp
         ret
+nulo:
+    mv ra, fp
+    li t0, 0
+    mv a0, t0
+    ret
 
 
 puts:
