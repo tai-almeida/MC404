@@ -1,10 +1,5 @@
 .bss
 output: .skip 35
-string_puts: .skip 35
-input: .skip 35
-
-.data
-profundidade: .word 1
 
 .text
 
@@ -22,71 +17,52 @@ recursive_tree_search:
     /* a0: endereco da raiz da arvore
        a1: valor procurado */
     li t0, 1            # profundidade (raiz esta no nivel 1)
-    mv fp, ra
-    li t4, 0            # conta passagens pela raiz
-    mv a2, a0
+    addi sp, sp, -4
+    sw ra, 0(sp)
+    mv fp, sp           # frame pointer aponta para o topo da pilha (inicial)
+    mv s1, a0           # salva o endereco da raiz
+    
     loop_arvore:
         addi sp, sp, -8
-        sw ra, 0(sp)
         sw a0, 4(sp)
+        sw ra, 0(sp)
 
-        bne a0, a2, 1f
-        addi t4, t4, 1
-
-        1:
         lw t2, 0(a0)        # verifica valor na raiz
         beq t2, a1, encontrou
 
         # comeca percorrendo a arvore pela esquerda
         lw t1, 4(a0)        # carrega endereco do no a esquerda
+        addi t0, t0, 1      # proximo nivel da arvore
         beqz t1, direita    # se apontar pra nulo, vai para a esquerda
         mv a0, t1           # atualiza endereco da raiz
-        addi t0, t0, 1      # proximo nivel da arvore
         jal loop_arvore
 
         lw a0, 4(sp)
         lw ra, 0(sp)
-        addi sp, sp, 8
-        bne a0, a2, 1f
-        addi t4, t4, 1
-        1:
+
         direita:
             lw t1, 8(a0)
             beqz t1, nao_existe
-            addi t0, t0, 1
             mv a0, t1
-            addi sp, sp, -8
-            sw ra, 0(sp)
-            sw a0, 4(sp)
             jal loop_arvore
-            bne a0, a2, 1f
-            addi t4, t4, 1
-            1:
-                lw a0, 4(sp)
-                lw ra, 0(sp)
-                addi sp, sp, 8
-                addi t0, t0, -1
-                mv a0, t0
-                ret
+    
     nao_existe:
         lw a0, 4(sp)
         lw ra, 0(sp)
         addi sp, sp, 8
         addi t0, t0, -1
-        li t3, 3
-        beq t4, t3, nulo
+        beq a0, s1, nulo        # se chegou na raiz, precorreu todos os nos
         ret
+    
     encontrou:
-        lw a0, 4(sp)
-        lw ra, 0(sp)
-        addi sp, sp, 8
         mv a0, t0
-        mv ra, fp
+        mv sp, fp               # volta a apontar pro topo original da pilha
+        lw ra, 0(sp)
         ret
 nulo:
-    mv ra, fp
-    li t0, 0
-    mv a0, t0
+    mv sp, fp
+    lw ra, (sp)
+    li a0, 0
     ret
 
 
@@ -303,9 +279,6 @@ itoa:
         sb t3, 0(a3)
         mv a0, a4
         ret
-
-
-    
 exit:
     li a0, 0
     li a7, 93
