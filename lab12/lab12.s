@@ -5,15 +5,10 @@ _start:
     li a7, 93
     ecall
 
-.bss
-string_input: .skip 35
-
 .text
-
-
-.set trigger_write,0xFFFF0100
+.set aciona_write,0xFFFF0100
 .set write_byte, 0xFFFF0101
-.set trigger_read, 0xFFFF0102
+.set aciona_read, 0xFFFF0102
 .set read_byte, 0xFFFF0103
 
 
@@ -41,69 +36,81 @@ get_operacao:
     addi sp, sp, -16
     sw ra, (sp)
 
-    li t1, 1
-    li t0, trigger_read         # leitura
-    sb t1, (t0)                 # carrega status 1 em t0
-    
     1:
-        # li t0, trigger_read    
-        # li t1, 1
-        # sb t1, (t0)            
-        
-        # li t1, read_byte
+        li t0, aciona_read
+        li t1, 1
+        sb t1, (t0)
+    2:                          # busy waiting
+        lb t1, (t0)
+        bnez t1, 2b
+
+        li t0, read_byte
         lb t2, (t0)
-        bnez t2, 1b            # continua lendo enquanto nao tiver finalizado
 
+        li t3, 10
+        bne t2, t3, 1b
+    lw ra, (sp)
+    addi sp, sp, 16
+
+
+puts:
+    /* operacao 1: imprime na saida serial o que ler na entrada */
+    addi sp, sp, -16
+    sw ra, (sp)
+    1:
+        li t0, aciona_read         # ativar leitura
+        li t1, 1
+        sb t1, (t0)
+    2:
+        lb t2, (t0)             # le status da leitura
+        bnez t2, 2b             # espera ate concluir a leitura
+
+        
+        li t0, read_byte
+        lb t3, (t0)
+        li t0, write_byte
+        sb t3, (t0)
+
+        li t1, 1
+        li t0, aciona_write
+        sb t1, (t0)
+    3:
+        lb t2, (t0)
+        bnez t2, 3b
+
+        li t4, 10
+        bne t3, t4, 1b
     
-    li t0, read_byte
-    lb a0, (t0)            # le byte com numero da operacao
-
-    li t2, 1
-    sb t2, (t0)
-    li t0, read_byte       # le \n
-
+    
     lw ra, (sp)
     addi sp, sp, 16
     ret
 
 
-puts:
-    addi sp, sp, -16
-    sw ra, 0(sp)
-    la s1, string_input
-    li t2, 1
-    sb t2, (t0)
-    sb t2, (t1)
-    li a1, 0
-    1:
-        
-        li t1, trigger_read
-        li t2, read_byte
-        li t3, write_byte
-        addi a1, a1, 1
-        sb t2, (s1)
-        addi s1, s1, 1
-        lb t2, (t0)
-        bnez t2, 1b
+
     
-fim_puts:
-    li t1, 10
-    sb t1, 0(t0)
-    addi a1, a1, 1
+# write:
+#     addi sp, sp, -16
+#     sw ra, (sp)
+#     li t0, write_byte
 
-    write:
-        loop_puts:
-        li t0, trigger_write
-        sub s1, s1, a1
-        lbu t1, (s1)
-        sb t1, (t3)
-        li t3, write_byte
-        addi s1, s1, 1
-        lb t4, (t0)
-        bnez t4, write
+#     1:
+#         lbu t1, (sp)
+#         sb t1, (t0)
+#         li t2, aciona_write
+#         li t3, 1
+#         sb t3, (t2)
 
-    lw ra, 0(sp)
-    addi sp, sp, 16
-    ret
-        
+#     2:
+#         lb t4, (t2)
+#         bnez t4, 2b
+
+#         addi a1, a1, -1
+#         addi sp, sp, 16
+#         bnez a1, 1b
+
+#     lw ra, (sp)
+#     addi sp, sp, 16
+#     ret
+
 
