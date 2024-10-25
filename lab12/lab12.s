@@ -86,31 +86,35 @@ puts:
     addi sp, sp, 16
     ret
 
-
-
+reverte:
+    addi sp, sp, -16
+    sw ra, (sp)
     
-# write:
-#     addi sp, sp, -16
-#     sw ra, (sp)
-#     li t0, write_byte
 
-#     1:
-#         lbu t1, (sp)
-#         sb t1, (t0)
-#         li t2, aciona_write
-#         li t3, 1
-#         sb t3, (t2)
 
-#     2:
-#         lb t4, (t2)
-#         bnez t4, 2b
+write:
+    addi sp, sp, -16
+    sw ra, (sp)
+    li t0, write_byte
 
-#         addi a1, a1, -1
-#         addi sp, sp, 16
-#         bnez a1, 1b
+    1:
+        lbu t1, (sp)
+        sb t1, (t0)
+        li t2, aciona_write
+        li t3, 1
+        sb t3, (t2)
 
-#     lw ra, (sp)
-#     addi sp, sp, 16
-#     ret
+    2:
+        lb t4, (t2)
+        bnez t4, 2b
+
+        addi a1, a1, -1
+        addi sp, sp, 16
+        bnez a1, 1b
+
+    lw ra, (sp)
+    addi sp, sp, 16
+    ret
+
 
 
