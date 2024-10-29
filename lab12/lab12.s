@@ -25,7 +25,7 @@ main:
     # verifica qual operacao executar
     beq a0, t2, 0f        
     beq a0, t3, 1f
-    # beq a0, t4, to_hexa
+    beq a0, t4, 2f
     # beq a0, t5, expressao
     end:
         lw ra, (sp)
@@ -37,9 +37,9 @@ main:
     1:
         jal reverte
         j end
-    # 2:
-    #     jal to_hexa
-    #     j end
+    2:
+        jal to_hexa
+        j end
 
 get_operacao:
     addi sp, sp, -16
@@ -147,36 +147,121 @@ reverte:
     addi sp, sp, 16
     ret
 
-# to_hexa:
-#     addi sp, sp, -16
-#     sw ra, (sp)
-    
-    
-
-
-write:
+to_hexa:
     addi sp, sp, -16
     sw ra, (sp)
-    li t0, write_byte
+
+    li a0, 0
+    li a1, 0
+    li a2, 1
+    li a3, 16
+    li a4, 16
+    li a6, 0
+    li t6, 1
+
+    mv fp, sp
 
     1:
-        lbu t1, (sp)
+        li t0, aciona_read         # ativar leitura
+        li t1, 1
         sb t1, (t0)
-        li t2, aciona_write
-        li t3, 1
-        sb t3, (t2)
-
     2:
-        lb t4, (t2)
-        bnez t4, 2b
+        lb t2, (t0)             # le status da leitura
+        bnez t2, 2b             # espera ate concluir a leitura
 
-        addi a1, a1, -1
+        
+        li t0, read_byte
+        lb t3, (t0)
+
+        li t4, 10
+        beq t3, t4, 3f
+
+        addi t3, t3, -48
+        mul a0, a0, t4
+        add a0, a0, t3
+        addi a1, a1, 1
+
+        j 1b
+    
+    3:                      # passa para hexadecimal
+        rem a5, a0, a4
+        div a0, a0, a4
+        addi a2, a2, 1
+        
+        addi sp, sp, -16        #guarda digito na pilha
+        sw a5, (sp)
+
+        bnez a0, 3b
+    
+    li a3, 16
+    li t5, 9
+    li t6, 10
+    li t4, 0
+
+    5:                      # converte para string
+        lw a0, (sp)
         addi sp, sp, 16
-        bnez a1, 1b
+    6:        
+        bgt a0, t5, 7f
+        j 8f
+        7:
+            addi a0, a0, 55
+            j 9f
+    8:
+        addi a0, a0, 48
+    9:
+        addi t4, t4, 1
+        li t0, write_byte
+        sb a0, (t0)
 
+        li t1, 1
+        li t0, aciona_write
+        sb t1, (t0)
+    10:
+        lb t2, (t0)
+        bnez t2, 10b
+        bne sp, fp, 5b
+
+    li t3, 10
+    li t0, write_byte
+    sb t3, (t0)
+
+    li t1, 1
+    li t0, aciona_write
+    sb t1, (t0)
+
+    11:
+        lb t2, (t0)
+        bnez t2, 11b
+
+    mv sp, fp
     lw ra, (sp)
     addi sp, sp, 16
     ret
+
+# write:
+#     addi sp, sp, -16
+#     sw ra, (sp)
+#     li t0, write_byte
+
+#     1:
+#         lbu t1, (sp)
+#         sb t1, (t0)
+#         li t2, aciona_write
+#         li t3, 1
+#         sb t3, (t2)
+
+#     2:
+#         lb t4, (t2)
+#         bnez t4, 2b
+
+#         addi a1, a1, -1
+#         addi sp, sp, 16
+#         bnez a1, 1b
+
+#     lw ra, (sp)
+#     addi sp, sp, 16
+#     ret
 
 
 
