@@ -197,9 +197,11 @@ to_hexa:
     
     3:                      # passa para hexadecimal
         bgt a7, zero, 4f
-        addi a0, a0, -1
-        xori a0, a0, -1              # complemento de dois 
-        ori a0, a0, -1
+        # tratar caso negativo (comp 2)
+        not a0, a0
+        addi a0, a0, 1
+        
+        
     4:
         rem a5, a0, a4
         div a0, a0, a4
@@ -354,9 +356,10 @@ res_algebrico:
 
             mul a0, a0, a7
             mul a0, a0, a1
-            bgt a0, zero, 4f
+            bge a0, zero, 4f
             li a6, -1
-            mul a0, a0, a7
+            mul a0, a0, a6
+
         4:
 
             addi sp, sp, -16
@@ -402,7 +405,7 @@ res_algebrico:
             addi sp, sp, 16
             mul a0, a0, a7
             add a0, a0, a1
-            bgt a0, zero, 4f
+            bge a0, zero, 4f
             li a6, -1
             mul a0, a0, a6
         4:
@@ -453,7 +456,7 @@ res_algebrico:
             mul a0, a0, a7
             sub a0, a1, a0
             
-            bgt a0, zero, 4f
+            bge a0, zero, 4f
             li a6, -1
             mul a0, a0, a6
         4:
@@ -501,7 +504,7 @@ res_algebrico:
 
             mul a0, a0, a7
             div a0, a1, a0
-            bgt a0, zero, 4f
+            bge a0, zero, 4f
             li a6, -1
             mul a0, a0, a7
         4:
@@ -519,7 +522,8 @@ res_algebrico:
         sw a3, (sp)
 
         bnez a0, 5b
-        bgt a6, zero, 6f
+        bge a6, zero, 6f
+        blt a7, zero, 6f
         li a6, 45
         addi sp, sp, -16
         sw a6, (sp) 
