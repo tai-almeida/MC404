@@ -1,7 +1,15 @@
+.bss
+.globl _system_time
+_system_time: .word
+.align 4
+pilha_programa: .skip 1024
+fim_pilha_prog:             
+pilha_isr: .skip 1024          
+fim_pilha_isr: 
+
 .text
 .align 2
 .globl _start
-.globl _system_time
 .globl play_note
 
 .set ATIVA_GPT, 0xFFFF0100        # gatilha o GPT a ler quando "1" eh armazenado
@@ -26,9 +34,9 @@ _start:
     li a0, ATIVA_GPT
     li t0, 1
     sb t0, (a0)
-    1:
+    busy_waiting_start:
         lb t0, (a0)
-        bnez t0, 1b
+        bnez t0, busy_waiting_start
     
     li t0, INTERRUPCAO_GPT
     li t1, 100
@@ -131,16 +139,8 @@ play_note:
     li t4, DURACAO_NOTA
     sh a4, (t4)
 
-
     lw ra, (sp)
     addi sp, sp, 16
     ret
 
 
-.bss
-_system_time: .word
-.align 4
-pilha_programa: .skip 1024
-fim_pilha_prog:             
-pilha_isr: .skip 1024          
-fim_pilha_isr: 
