@@ -42,7 +42,7 @@ int_handler:
     sw t2, 8(sp)
     sw t3, 12(sp)
 
-    csrr t0, a7         # verifica syscall chamada
+    mv t0, a7         # verifica syscall chamada
 
     li t1, 10                   # engine e steering
     beq t0, t1, trata_engine_steer
@@ -54,10 +54,10 @@ int_handler:
     beq t0, t1, trata_gps
 
     trata_engine_steer:
+        li t0, DIR_STEER
+        sw a1, (t0)
         li t0, DIR_ENGINE
-        sb a0, (t0)
-        li t1, DIR_STEER
-        sb a1, (t1)
+        sw a0, (t0)
         j fim_isr
     trata_freio_de_mao:
         li t0, FREIO_MAO
@@ -118,11 +118,11 @@ _start:
     # habilita interrupoes externas e globais
     csrr t1, mie
     li t2, 0x800
-    ori t1, t1, t2
+    or t1, t1, t2
     csrw mie, t2
 
     csrr t1, mstatus
-    ori t1, t1, 0x8
+    or t1, t1, 0x8
     csrw mstatus, t1
 
     la t0, user_main
@@ -136,7 +136,6 @@ control_logic:
     sw ra, (sp)
 
     li a7, 15
-    la a3, steer
     la a0, x_atual
     la a1, y_atual
     la a2, z_atual
@@ -144,27 +143,41 @@ control_logic:
 
     lw t0, (a0)
     lw t1, (a1)
-    li t2, (a2)
-    
+    lW t2, (a2)
+
     jal calcula_angulo
 
+    lw ra, (sp)
+    addi sp, sp, 16
+    ret
+
 calcula_angulo:
-    li t3, 100
-    bgt t0, t3, direita         # x > 100: vira para a direita
-    li t3, 50
-    blt t0, t3, esquerda        # x < 50: vira para esquerda
+    addi sp, sp, -16
+    sw ra, (sp)
 
-    reto:
-        li a0, 1
-        li a1, 0
-        li a7, 10
-        ecall
-        j end 
-    direita:
-        li a0, 1
-        li a1, 1
-        li a7, 10
+    li a0, 1
+    li a1, -80
+    li a7, 10
+    ecall
 
+    li t1, 30000
+    set_delay_curva:
+    0:
+        addi t1, t1, -1
+        bnez t1, 0b
+    
+    li a0, 1
+    li a1, 0
+    li a7, 10
+    ecall
 
+    li t1, 40000
+    set_delay_reta:
+    /* Seta tempo de delay para determinado estercamento */
+    0:
+        addi t1, t1, -1
+        bnez t1, 0b
 
-
+    lw ra, (sp)
+    addi sp, sp, 16
+    ret
