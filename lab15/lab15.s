@@ -156,11 +156,11 @@ calcula_angulo:
     sw ra, (sp)
 
     li a0, 1
-    li a1, -80
+    li a1, -100
     li a7, 10
     ecall
 
-    li t1, 30000
+    li t1, 22000
     set_delay_curva:
     0:
         addi t1, t1, -1
@@ -171,7 +171,7 @@ calcula_angulo:
     li a7, 10
     ecall
 
-    li t1, 40000
+    li t1, 30000
     set_delay_reta:
     /* Seta tempo de delay para determinado estercamento */
     0:
