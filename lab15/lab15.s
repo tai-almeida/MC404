@@ -160,7 +160,7 @@ calcula_angulo:
     li a7, 10
     ecall
 
-    li t1, 22000
+    li t1, 24000
     set_delay_curva:
     0:
         addi t1, t1, -1
